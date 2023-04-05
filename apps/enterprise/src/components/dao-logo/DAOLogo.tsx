@@ -17,7 +17,7 @@ const logoSizeRecord: Record<DaoLogoSize, number> = {
   l: 60
 }
 
-interface DAOLogoProps {
+export interface DAOLogoProps {
   logo?: string
   size?: DaoLogoSize
   className?: string
@@ -28,13 +28,14 @@ const Container = styled.div<{ size: DaoLogoSize }>`
   ${roundedCSS};
   ${centerContentCSS};
 
-  padding: 8px;
-
-  height: ${({ size }) => getSameDimensionsCSS(logoSizeRecord[size])};
+  ${({ size }) => getSameDimensionsCSS(logoSizeRecord[size])};
 
   img {
     object-fit: cover;
-    ${({ size }) => getSameDimensionsCSS(logoSizeRecord[size] * 0.64)};
+    ${roundedCSS};
+    width: 64%;
+  
+    ${getSameDimensionsCSS('64%')};
   }
 `
 

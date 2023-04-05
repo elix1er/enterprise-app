@@ -35,7 +35,7 @@ const toDays = (seconds: number) => {
 
 const formatDuration = (value: enterprise.Duration | null | undefined) => {
   if (!value) {
-    return noValue;
+    return 'Immediate';
   }
 
   if ('time' in value) {
@@ -77,7 +77,7 @@ export const getUpdatedFields = (
 
   if (msg.unlocking_period !== 'no_change') {
     const unlockingPeriod = msg.unlocking_period.change;
-    view.unlockingPeriod = unlockingPeriod ? toDays(Number(unlockingPeriod)) : noValue;
+    view.unlockingPeriod = formatDuration(unlockingPeriod)
   }
 
   if (msg.voting_duration !== 'no_change') {
