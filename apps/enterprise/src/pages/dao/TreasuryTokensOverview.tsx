@@ -1,35 +1,47 @@
-import { useCurrentDao } from 'dao/components/CurrentDaoProvider';
 import { useTreasuryTokensQuery } from 'queries';
 import { Token } from 'types';
 import { u } from '@terra-money/apps/types';
 import Big, { BigSource } from 'big.js';
-import { assertDefined, sum, toPercents } from '@terra-money/apps/utils';
+import { assertDefined, sum } from '@terra-money/apps/utils';
 import { Throbber } from 'components/primitives';
 import { AnimateNumber } from '@terra-money/apps/components';
-import { demicrofy, formatAmount } from '@terra-money/apps/libs/formatting';
+import { formatAmount } from '@terra-money/apps/libs/formatting';
 import { Address } from 'components/address';
-import { TreasuryTokensPieChart } from './TreasuryTokensPieChart';
 import styled from 'styled-components';
-import { HStack, VStack } from 'lib/ui/Stack';
+import { VStack } from 'lib/ui/Stack';
 import { Text } from 'lib/ui/Text';
 import { ResponsiveView } from 'lib/ui/ResponsiveView';
 import { DepositIntoTreasury } from './deposit';
+import { useCurrentDaoAddress } from 'dao/navigation';
+import { AssetCard } from './AssetCard';
 
 export type TreasuryToken = Token & { amount: u<BigSource>; usdAmount?: BigSource };
 
-const PieChartWr = styled.div`
-  width: 100%;
-`;
-
 const AssetsContainer = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, 160px);
+  grid-template-columns: repeat(auto-fit, minmax(386.67px, 1fr));
+  grid-template-rows: repeat(auto-fill, 104px);
+  gap: 16px;
 `;
 
+const BasicInfoContainer = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: start;
+  gap: 16px;
+  border-radius: 12px;
+  background-color: #1D1F20;
+  width: 100%;
+  height: 64px;
+  padding-left: 16px;
+  margin-bottom: 10px;
+`
+
 const NormalScreenWidthContainer = styled.div`
-  display: grid;
-  grid-template-columns: 148px 1fr;
-  grid-template-rows: minmax(148px, 1fr);
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
   gap: 48px;
 `;
 
@@ -41,14 +53,14 @@ const SmallScreenWidthContainer = styled.div`
 `;
 
 export const TreasuryTokensOverview = () => {
-  const dao = useCurrentDao();
+  const address = useCurrentDaoAddress()
 
-  const { data: tokenBalances } = useTreasuryTokensQuery(dao.address);
+  const { data: tokenBalances } = useTreasuryTokensQuery(address);
 
   const tokenBalancesWithPrice = tokenBalances
     ? tokenBalances
-        .filter((t) => t.usdAmount)
-        .sort((a, b) => assertDefined(b.usdAmount).cmp(assertDefined(a.usdAmount)))
+      .filter((t) => t.usdAmount)
+      .sort((a, b) => assertDefined(b.usdAmount).cmp(assertDefined(a.usdAmount)))
     : undefined;
 
   const treasuryTotalInUSD = tokenBalancesWithPrice
@@ -59,19 +71,19 @@ export const TreasuryTokensOverview = () => {
     ? tokenBalances.filter((token) => token.usdAmount === undefined).sort((a, b) => Big(a.amount).cmp(b.amount))
     : undefined;
 
-  const renderPieChart = () => {
-    return (
-      <PieChartWr>
-        <TreasuryTokensPieChart tokens={tokenBalancesWithPrice || []} />
-      </PieChartWr>
-    );
-  };
+  // const renderPieChart = () => {
+  //   return (
+  //     <PieChartWr>
+  //       <TreasuryTokensPieChart tokens={tokenBalancesWithPrice || []} />
+  //     </PieChartWr>
+  //   );
+  // };
 
   const renderBasicInfo = () => {
     return (
-      <VStack gap={8}>
+      <BasicInfoContainer>
         <Text color="supporting" size={14}>
-          Treasury Total Value
+          Treasury Total Value:
         </Text>
         {treasuryTotalInUSD !== undefined ? (
           <Text size={18} weight="semibold">
@@ -80,8 +92,9 @@ export const TreasuryTokensOverview = () => {
         ) : (
           <Throbber variant="secondary" size="small" />
         )}
-        <Address address={dao.address} />
-      </VStack>
+        <Address address={address} />
+      </BasicInfoContainer>
+
     );
   };
 
@@ -90,16 +103,11 @@ export const TreasuryTokensOverview = () => {
       <AssetsContainer>
         {treasuryTotalInUSD !== undefined &&
           tokenBalancesWithPrice?.map((token, index) => (
-            <Text color="supporting" size={14} key={index}>
-              {token.symbol} {formatAmount(demicrofy(token.amount, token.decimals))}{' '}
-              {toPercents(assertDefined(token.usdAmount).div(treasuryTotalInUSD).toNumber(), 'round')}
-            </Text>
+            <AssetCard token={token} treasuryTotalInUSD={treasuryTotalInUSD}></AssetCard>
           ))}
         {tokenBalancesWithoutPrice !== undefined &&
           tokenBalancesWithoutPrice?.map((token, index) => (
-            <Text color="supporting" size={14} key={index}>
-              {token.symbol} {formatAmount(demicrofy(token.amount, token.decimals))}
-            </Text>
+            <AssetCard token={token}></AssetCard>
           ))}
       </AssetsContainer>
     );
@@ -111,7 +119,6 @@ export const TreasuryTokensOverview = () => {
         <VStack gap={12}>
           <SmallScreenWidthContainer>
             {renderBasicInfo()}
-            {renderPieChart()}
           </SmallScreenWidthContainer>
           {renderAssets()}
           <DepositIntoTreasury />
@@ -119,15 +126,11 @@ export const TreasuryTokensOverview = () => {
       )}
       normal={() => (
         <NormalScreenWidthContainer>
-          {renderPieChart()}
-
-          <HStack justifyContent="space-between" alignItems="end">
-            <VStack fullHeight justifyContent="space-between" gap={8}>
-              {renderBasicInfo()}
-              {renderAssets()}
-            </VStack>
+          <VStack fullHeight fullWidth justifyContent="space-between" gap={8}>
+            {renderBasicInfo()}
+            {renderAssets()}
             <DepositIntoTreasury />
-          </HStack>
+          </VStack>
         </NormalScreenWidthContainer>
       )}
     />

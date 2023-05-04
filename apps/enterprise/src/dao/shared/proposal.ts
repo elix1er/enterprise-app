@@ -21,6 +21,7 @@ export interface Proposal {
   totalVotes: Big;
   type: enterprise.ProposalType;
   executionTxHash?: string;
+  proposer?: string;
 }
 
 export const sharedProposalTypes = [
@@ -36,6 +37,7 @@ export const sharedProposalTypes = [
   'undelegate',
   'redelegate',
   'council',
+  'minWeightForRewards',
 ] as const;
 
 export const daoProposalsRecord = {
@@ -51,21 +53,22 @@ export type ProposalType =
 
 export const proposalTitle: Record<ProposalType, string> = {
   text: 'Text proposal',
-  metadata: 'Update metadata proposal',
-  config: 'Update configuration proposal',
-  upgrade: 'Upgrade proposal',
+  metadata: 'Update metadata',
+  config: 'Update configuration',
+  upgrade: 'Upgrade',
   assets: 'Update whitelisted assets',
   nfts: 'Update whitelisted NFTs',
-  execute: 'Proposal to execute message',
+  execute: 'Execute message',
   members: 'Update multisig members',
-  spend: 'Spend treasury proposal',
-  mint: 'Mint token proposal',
-  mintNft: 'Mint NFT proposal',
-  burn: 'Burn token proposal',
-  delegate: 'Delegate LUNA proposal',
-  undelegate: 'Undelegate LUNA proposal',
-  redelegate: 'Redelegate LUNA proposal',
+  spend: 'Spend treasury',
+  mint: 'Mint token',
+  mintNft: 'Mint NFT',
+  burn: 'Burn token',
+  delegate: 'Delegate LUNA',
+  undelegate: 'Undelegate LUNA',
+  redelegate: 'Redelegate LUNA',
   council: 'Update council',
+  minWeightForRewards: 'Update minimum weight for rewards',
 };
 
 export const proposalActionShortName: Record<enterprise.ProposalActionType, string> = {
@@ -79,6 +82,7 @@ export const proposalActionShortName: Record<enterprise.ProposalActionType, stri
   execute_msgs: 'execute',
   modify_multisig_membership: 'members',
   distribute_funds: 'distribute',
+  update_minimum_weight_for_rewards: 'min weight',
 };
 
 export const getProposalActionType = (action: enterprise.ProposalAction): enterprise.ProposalActionType => {

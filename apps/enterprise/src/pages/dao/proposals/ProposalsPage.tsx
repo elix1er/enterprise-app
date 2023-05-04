@@ -1,12 +1,8 @@
 import { useNavigate } from 'react-router';
 import { Container } from '@terra-money/apps/components';
 import { SearchInput } from 'components/primitives';
-import { useVotingPowerQuery } from 'queries';
 import { ProposalCard } from '../../shared/ProposalCard';
-import { useConnectedWallet } from '@terra-money/wallet-provider';
-import Big from 'big.js';
 import { useMemo, useState } from 'react';
-import { useCurrentDao } from 'dao/components/CurrentDaoProvider';
 import { HStack } from 'lib/ui/Stack';
 import { ResponsiveView } from 'lib/ui/ResponsiveView';
 import { useAmICouncilMember } from 'dao/hooks/useAmICouncilMember';
@@ -17,17 +13,15 @@ import { InternalLink } from 'components/link';
 import { enterprise } from 'types/contracts';
 import { proposalStatuses } from 'proposal';
 import { ProposalsFilter } from './ProposalsFilter';
+import { useDoIHaveVotingPowerQuery } from 'dao/hooks/useDoIHaveVotingPowerQuery';
+import { useCurrentDaoAddress } from 'dao/navigation';
 
 const LIMIT = 100;
 
 export const ProposalsPage = () => {
-  const dao = useCurrentDao();
+  const address = useCurrentDaoAddress();
 
-  const connectedWallet = useConnectedWallet();
-
-  const { data: proposalsQuery, isLoading } = useDaoProposalsQuery({ address: dao.address });
-
-  const { data: votingPower = Big(0) } = useVotingPowerQuery(dao?.address, connectedWallet?.walletAddress);
+  const { data: proposalsQuery, isLoading } = useDaoProposalsQuery({ address });
 
   const [search, setSearch] = useState({
     input: '',
@@ -44,8 +38,9 @@ export const ProposalsPage = () => {
   const navigate = useNavigate();
 
   const amICouncilMember = useAmICouncilMember();
+  const { data: doIHaveVotingPower } = useDoIHaveVotingPowerQuery()
 
-  const newProposalsDisabled = votingPower.lte(0) && !amICouncilMember;
+  const newProposalsDisabled = !doIHaveVotingPower && !amICouncilMember;
 
   return (
     <Container direction="column" gap={32}>
@@ -89,7 +84,7 @@ export const ProposalsPage = () => {
           }
           onClick={() => {
             if (newProposalsDisabled === false) {
-              navigate(`/dao/${dao?.address}/proposals/create`);
+              navigate(`/dao/${address}/proposals/create`);
             }
           }}
         >
@@ -106,7 +101,7 @@ export const ProposalsPage = () => {
                 }`}
               action={
                 newProposalsDisabled ? undefined : (
-                  <InternalLink to={`/dao/${dao?.address}/proposals/create`}>
+                  <InternalLink to={`/dao/${address}/proposals/create`}>
                     <PrimaryButton as="div" kind="secondary">
                       Create
                     </PrimaryButton>

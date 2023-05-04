@@ -2,12 +2,32 @@ import { ProposalForm } from '../shared/ProposalForm';
 import { toUpgradeDaoMsg } from './helpers/toUpgradeDaoMsg';
 import { useContractInfoQuery } from 'queries/useContractInfoQuery';
 import { useCurrentDao } from 'dao/components/CurrentDaoProvider';
-import { useEnterpriseCodeIdsQuery } from 'queries/useEnterpriseCodeIdsQuery';
-import { Text, Throbber } from 'components/primitives';
+import { useEnterpriseLatestCodeIdQuery } from 'queries/useEnterpriseCodeIdsQuery';
+import { Throbber } from 'components/primitives';
 import { assertDefined } from '@terra-money/apps/utils';
 import { LoadingPage } from 'pages/shared/LoadingPage';
 import { base64Encode } from 'utils';
 import { useWallet } from '@terra-money/wallet-provider';
+import { Text } from 'lib/ui/Text';
+import { WasmMsgInput } from 'components/wasm-msg-input';
+import { useMemo, useState } from 'react';
+import { VStack } from 'lib/ui/Stack';
+
+interface FormatMigrationMsgParams {
+  msg: string
+  networkName: string
+  currentCodeId: number
+}
+
+const defaultMigrateMsg = '{}';
+
+const formatMigrateMsg = ({ msg, networkName, currentCodeId }: FormatMigrationMsgParams) => {
+  const json = JSON.parse(msg === '' ? defaultMigrateMsg : msg);
+
+  const migrationChangeCodeId = networkName === 'mainnet' ? 788 : 5877;
+
+  return currentCodeId < migrationChangeCodeId ? JSON.stringify(json) : base64Encode(json);
+}
 
 export const UpgradeProposalForm = () => {
   const { network } = useWallet();
@@ -15,37 +35,61 @@ export const UpgradeProposalForm = () => {
   const dao = useCurrentDao();
 
   const { data: contractInfo, isLoading: isLoadingContract } = useContractInfoQuery(dao.address);
-  const { data: codeIds, isLoading: isLoadingCodes } = useEnterpriseCodeIdsQuery();
+  const { data: latestCodeId, isLoading: isLoadingLatestCodeId } = useEnterpriseLatestCodeIdQuery()
 
-  const latestCodeId = codeIds ? Math.max(...codeIds.map(Number)) : undefined;
   const isUpToDate = latestCodeId && contractInfo ? latestCodeId === contractInfo.code_id : undefined;
 
-  const upgradeMessage = `Upgrade to Code ID ${latestCodeId}`;
+  const upgradeMessage = `Upgrade to Code ID ${latestCodeId} \n`;
+  const changeLogMessage = `Feature added: DAOs can now specify a minimum weight a user needs to have to be eligible for rewards`;
+
+  const [message, setMessage] = useState(defaultMigrateMsg);
+  const migrateMsg = useMemo(() => {
+    try {
+      return formatMigrateMsg({ msg: message, networkName: network.name, currentCodeId: contractInfo?.code_id ?? 0 });
+    } catch {
+      return undefined;
+    }
+  }, [contractInfo?.code_id, message, network.name])
+
+  const isDisabled = migrateMsg === undefined || isUpToDate !== false
 
   return (
-    <LoadingPage isLoading={isLoadingContract || isLoadingCodes}>
+    <LoadingPage isLoading={isLoadingContract || isLoadingLatestCodeId}>
       <ProposalForm
-        disabled={isUpToDate}
+        disabled={isDisabled}
         initialState={{
           title: upgradeMessage,
           description: upgradeMessage,
         }}
         getProposalActions={() => {
-          const currentCodeId = contractInfo?.code_id ?? 0;
-
-          const migrationChangeCodeId = network.name === 'mainnet' ? 788 : 5877;
-
-          // we have changed the migration message format which means that in order to upgrade
-          // to the new contract we need to still provide the older migration format
-          const migrateMsg = currentCodeId < migrationChangeCodeId ? '{}' : base64Encode({});
-
-          return [{ upgrade_dao: toUpgradeDaoMsg(assertDefined(latestCodeId), migrateMsg) }];
+          return [{ upgrade_dao: toUpgradeDaoMsg(assertDefined(latestCodeId), assertDefined(migrateMsg)) }];
         }}
       >
-        {isUpToDate === undefined ? (
+        {isUpToDate === false && (
+          <>
+            <WasmMsgInput
+              label="Migration message (optional)"
+              error={migrateMsg === undefined ? 'Invalid JSON' : undefined}
+              valid
+              placeholder="Type your migration message here"
+              value={message}
+              onChange={value => setMessage(value || '')}
+            />
+            <VStack gap={4}>
+              <Text weight='bold'>{upgradeMessage}</Text>
+              <Text color="supporting">
+                {changeLogMessage}
+              </Text>
+            </VStack>
+          </>
+        )}
+
+        {isUpToDate === true && (
+          <Text weight="bold">Your DAO is up-to-date!</Text>
+        )}
+
+        {isUpToDate === undefined && (
           <Throbber />
-        ) : (
-          <Text variant="heading4">{isUpToDate ? 'Your DAO is up-to-date!' : upgradeMessage}</Text>
         )}
       </ProposalForm>
     </LoadingPage>

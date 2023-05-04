@@ -2,16 +2,15 @@ import { CW20Addr } from '@terra-money/apps/types';
 import { assertDefined } from '@terra-money/apps/utils';
 import { useContract } from 'chain/hooks/useContract';
 import { toProposal } from 'dao/utils/toProposal';
-import { Direction } from 'hooks';
 import { useDAOQuery } from 'queries';
 import { useQuery, UseQueryResult } from 'react-query';
 import { Proposal } from 'dao/shared/proposal';
 import { enterprise } from 'types/contracts';
 import { QUERY_KEY } from './queryKey';
+import { toDao } from 'dao/utils/toDao';
 
 interface UseProposalsQueryOptions {
   address: string;
-  direction?: Direction;
   enabled?: boolean;
 }
 
@@ -27,17 +26,11 @@ export const useDaoProposalsQuery = ({
   return useQuery(
     [QUERY_KEY.PROPOSALS, address],
     async () => {
-      const result: Proposal[] = [];
-      try {
-        const { proposals } = await query<ProposalsQueryArguments, enterprise.ProposalsResponse>(address, {
-          proposals: {},
-        });
-        result.push(...proposals.map((resp) => toProposal(resp, assertDefined(dao))));
-      } catch (err) {
-        reportError(err);
-      }
+      const { proposals } = await query<ProposalsQueryArguments, enterprise.ProposalsResponse>(address, {
+        proposals: {},
+      });
 
-      return result.sort((a, b) => b.created - a.created);
+      return proposals.map((resp) => toProposal(resp, toDao(assertDefined(dao)))).sort((a, b) => b.created - a.created);
     },
     {
       refetchOnMount: false,

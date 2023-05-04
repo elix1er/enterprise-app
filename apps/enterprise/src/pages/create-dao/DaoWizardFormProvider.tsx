@@ -17,7 +17,6 @@ import { validateDaoInfo } from './shared/helpers/validateDaoInfo';
 import { validateSocials } from './shared/helpers/validateSocials';
 import { validateInitialBalances } from './token/helpers/validateInitialBalances';
 import { validateTokenInfo } from './token/helpers/validateTokenInfo';
-import { validateTokenMarketing } from './token/helpers/validateTokenMarketing';
 import { fetchExistingMultisigVoters } from './fetchExistingMultisigVoters';
 import { useEnv } from 'hooks';
 import { validateCouncil } from './shared/helpers/validateCouncil';
@@ -66,7 +65,6 @@ export interface DaoWizardInput {
   tokenInfo: FormState<TokenInfo>;
   initialBalances: FormState<InitialBalance>[];
   initialDaoBalance: number | undefined;
-  tokenMarketing: FormState<TokenMarketing>;
 
   council?: FormState<CouncilInput>;
 
@@ -84,6 +82,8 @@ export interface DaoWizardInput {
   existingMultisigVoters: MultisigVoter[] | undefined;
   existingMultisigVotersLoading: boolean;
   existingMultisigVotersError: string | undefined;
+
+  whitelistedAssets: enterprise.AssetInfoBaseFor_Addr[]
 }
 
 export interface NftMembershipInfo {
@@ -96,18 +96,17 @@ export interface TokenInfo {
   decimals: number;
   name: string;
   symbol: string;
+
+  // token marketing
+  description?: string;
+  logo?: string;
+  marketingOwner?: string;
+  project?: string;
 }
 
 export interface InitialBalance {
   address: string;
   amount: string;
-}
-
-export interface TokenMarketing {
-  description?: string;
-  logo?: string;
-  marketingOwner?: string;
-  project?: string;
 }
 
 export type DaoWizardStep =
@@ -121,8 +120,8 @@ export type DaoWizardStep =
   | 'members'
   | 'membership'
   | 'tokenInfo'
-  | 'initialBalances'
-  | 'tokenMarketing';
+  | 'whitelist'
+  | 'initialBalances';
 
 export const EMPTY_MEMBER = { addr: '', weight: 100, error: undefined, valid: undefined };
 
@@ -138,6 +137,7 @@ export interface DaoWizardState extends DaoWizardInput {
 const sharedInitialSteps: DaoWizardStep[] = ['type', 'info', 'daoImport'];
 const sharedLastSteps: DaoWizardStep[] = [
   'govConfig',
+  'whitelist',
   'council',
   'socials',
   'confirm',
@@ -146,7 +146,7 @@ const sharedLastSteps: DaoWizardStep[] = [
 const daoTypeSpecificSteps: Record<enterprise.DaoType, DaoWizardStep[]> = {
   multisig: ['members'],
   nft: ['membership'],
-  token: ['tokenInfo', 'initialBalances', 'tokenMarketing'],
+  token: ['tokenInfo', 'initialBalances'],
 };
 
 const getPredictedSteps = (type: enterprise.DaoType, shouldImport: boolean): DaoWizardStep[] => {
@@ -185,6 +185,7 @@ const getInitialState = (timeConversionFactor: number, walletAddr: string | unde
     vetoThreshold: 0.51,
     unlockingPeriod: 14,
     voteDuration: 7,
+    allowEarlyProposalExecution: true
   },
 
   daoImport: {
@@ -214,7 +215,6 @@ const getInitialState = (timeConversionFactor: number, walletAddr: string | unde
   },
   initialBalances: [EMPTY_INITIAL_BALANCE],
   initialDaoBalance: undefined,
-  tokenMarketing: {},
 
   existingTokenAddr: '',
   existingToken: undefined,
@@ -230,6 +230,7 @@ const getInitialState = (timeConversionFactor: number, walletAddr: string | unde
   existingMultisigVoters: undefined,
   existingMultisigVotersLoading: false,
   existingMultisigVotersError: undefined,
+  whitelistedAssets: [],
 });
 
 interface DaoWizardFormState {
@@ -237,6 +238,7 @@ interface DaoWizardFormState {
   formState: DaoWizardState;
   back: () => void;
   forward: () => void;
+  goToStep: (step: DaoWizardStep) => void;
 }
 
 interface DaoWizardFormProviderProps {
@@ -315,6 +317,12 @@ const validateCurrentStep = (state: DaoWizardState): Partial<DaoWizardState> => 
       };
     },
 
+    whitelist: () => {
+      return {
+        isValid: true
+      }
+    },
+
     membership: () => {
       const nftMembership = validateNftMembership(state.nftMembership);
       return {
@@ -336,14 +344,6 @@ const validateCurrentStep = (state: DaoWizardState): Partial<DaoWizardState> => 
       return {
         initialBalances,
         isValid: initialBalances.every(isFormStateValid) && initialBalances.length > 0,
-      };
-    },
-    tokenMarketing: () => {
-      const tokenMarketing = validateTokenMarketing(state.tokenMarketing);
-
-      return {
-        tokenMarketing,
-        isValid: isFormStateValid(tokenMarketing),
       };
     },
   };
@@ -418,12 +418,18 @@ export const DaoWizardFormProvider = ({ children }: DaoWizardFormProviderProps) 
     updateFormState({ ...newState, ...validateCurrentStep(newState) });
   }, [formState, steps, updateFormState]);
 
+  const goToStep = useCallback((step: DaoWizardStep) => {
+    const newState = { ...formState, steps: steps.slice(0, steps.indexOf(step) + 1) };
+    updateFormState({ ...newState, ...validateCurrentStep(newState) });
+  }, [formState, steps, updateFormState]);
+
   return (
     <DaoWizardFormContext.Provider
       value={{
         formInput,
         formState,
         back,
+        goToStep,
         forward,
       }}
     >

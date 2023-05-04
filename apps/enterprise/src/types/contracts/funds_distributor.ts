@@ -7,6 +7,9 @@ export module funds_distributor {
         update_user_weights: UpdateUserWeightsMsg;
       }
     | {
+        update_minimum_eligible_weight: UpdateMinimumEligibleWeightMsg;
+      }
+    | {
         distribute_native: {};
       }
     | {
@@ -19,10 +22,6 @@ export module funds_distributor {
   export type Binary = string;
   export interface UpdateUserWeightsMsg {
     /**
-     * The new total weight, after accounting for the users' changes
-     */
-    new_total_weight: Uint128;
-    /**
      * New weights that the users have, after the change
      */
     new_user_weights: UserWeight[];
@@ -30,6 +29,12 @@ export module funds_distributor {
   export interface UserWeight {
     user: string;
     weight: Uint128;
+  }
+  export interface UpdateMinimumEligibleWeightMsg {
+    /**
+     * New minimum weight that the user must have to be eligible for rewards distributions
+     */
+    minimum_eligible_weight: Uint128;
   }
   export interface ClaimRewardsMsg {
     /**
@@ -49,11 +54,25 @@ export module funds_distributor {
   }
   export interface InstantiateMsg {
     enterprise_contract: string;
+    initial_weights: UserWeight[];
+    /**
+     * Optional minimum weight that the user must have to be eligible for rewards distributions
+     */
+    minimum_eligible_weight?: Uint128 | null;
   }
-  export interface MigrateMsg {}
-  export type QueryMsg = {
-    user_rewards: UserRewardsParams;
-  };
+  export interface MigrateMsg {
+    minimum_eligible_weight?: Uint128 | null;
+  }
+  export interface MinimumEligibleWeightResponse {
+    minimum_eligible_weight: Uint128;
+  }
+  export type QueryMsg =
+    | {
+        user_rewards: UserRewardsParams;
+      }
+    | {
+        minimum_eligible_weight: {};
+      };
   export interface UserRewardsParams {
     /**
      * Addresses of CW20 tokens to be queried for rewards
@@ -64,5 +83,20 @@ export module funds_distributor {
      */
     native_denoms: string[];
     user: string;
+  }
+  export interface UserRewardsResponse {
+    cw20_rewards: Cw20Reward[];
+    native_rewards: NativeReward[];
+  }
+  export interface Cw20Reward {
+    amount: Uint128;
+    /**
+     * Address of the CW20 token
+     */
+    asset: string;
+  }
+  export interface NativeReward {
+    amount: Uint128;
+    denom: string;
   }
 }

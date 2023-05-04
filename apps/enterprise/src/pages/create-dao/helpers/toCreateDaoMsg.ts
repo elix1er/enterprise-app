@@ -9,10 +9,9 @@ const getDaoMembership = (input: DaoWizardInput) => {
     type,
     members,
     nftMembership,
-    tokenInfo: { name, symbol, decimals },
+    tokenInfo: { name, symbol, decimals, description, marketingOwner, logo, project },
     initialBalances,
     initialDaoBalance,
-    tokenMarketing,
     daoImport,
   } = input;
 
@@ -61,10 +60,10 @@ const getDaoMembership = (input: DaoWizardInput) => {
           initial_dao_balance: initialDaoBalance ? microfy(initialDaoBalance, decimals).toString() : null,
           token_decimals: decimals,
           token_marketing: {
-            description: tokenMarketing.description,
-            logo_url: tokenMarketing.logo,
-            marketing_owner: tokenMarketing.marketingOwner,
-            project: tokenMarketing.project,
+            description,
+            logo_url: logo,
+            marketing_owner: marketingOwner,
+            project: project,
           },
           token_name: name,
           token_symbol: symbol,
@@ -98,11 +97,24 @@ const getDaoGovConfig = ({ govConfig, type, timeConversionFactor }: DaoWizardSta
   return config;
 };
 
+const getMinimumWeightForRewards = ({ govConfig, type, tokenInfo }: DaoWizardState) => {
+  const { minimumWeightForRewards } = govConfig;
+
+  if (minimumWeightForRewards === undefined) return undefined;
+
+  if (type === 'token') {
+    return microfy(minimumWeightForRewards, tokenInfo.decimals).toString();
+  }
+
+  return minimumWeightForRewards.toString()
+}
+
 export const toCreateDaoMsg = (input: DaoWizardState): CreateDaoMsgType => {
   const {
     info: { name, logo, description },
     socials,
     council,
+    whitelistedAssets,
   } = input;
 
   return {
@@ -116,7 +128,6 @@ export const toCreateDaoMsg = (input: DaoWizardState): CreateDaoMsgType => {
             threshold: getDaoRatio(council.threshold),
           }
           : null,
-      asset_whitelist: null,
       dao_membership: getDaoMembership(input),
       dao_metadata: {
         logo: logo ? { url: logo } : 'none',
@@ -129,7 +140,9 @@ export const toCreateDaoMsg = (input: DaoWizardState): CreateDaoMsgType => {
           telegram_username: socials.telegramUsername,
         },
       },
+      minimum_weight_for_rewards: getMinimumWeightForRewards(input),
       dao_gov_config: getDaoGovConfig(input),
+      asset_whitelist: whitelistedAssets.length > 0 ? whitelistedAssets : null,
     },
   };
 };

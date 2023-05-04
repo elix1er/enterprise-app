@@ -5,14 +5,15 @@ import { useClaimRewardsTx } from "dao/tx/useClaimRewardsTx";
 import { PrimaryButton } from "lib/ui/buttons/rect/PrimaryButton";
 import { TitledContent } from "lib/ui/Layout/TitledContent";
 import { Panel } from "lib/ui/Panel/Panel";
-import { VStack } from "lib/ui/Stack";
+import { HStack, VStack } from "lib/ui/Stack";
 import { Text } from "lib/ui/Text";
 import { useDAOAssetsWhitelist, useGlobalAssetsWhitelist } from "queries";
 import { useMemo } from "react";
 import { RewardItem } from "./RewardItem";
+import { InfoIcon } from "lib/ui/icons/InfoIcon";
 
 export const RewardsPanel = () => {
-  const { fundsDistributorContract, address, type, membershipContractAddress } = useCurrentDao()
+  const { funds_distributor_contract, address, dao_type, dao_membership_contract } = useCurrentDao()
   const { data: globalWhitelist } = useGlobalAssetsWhitelist()
   const { data: daoWhitelist } = useDAOAssetsWhitelist(address)
 
@@ -34,15 +35,15 @@ export const RewardsPanel = () => {
       }
     })
 
-    if (type === 'token') {
-      result.cw20.add(membershipContractAddress)
+    if (dao_type === 'token') {
+      result.cw20.add(dao_membership_contract)
     }
 
     return result
-  }, [daoWhitelist, globalWhitelist, membershipContractAddress, type])
+  }, [daoWhitelist, globalWhitelist, dao_membership_contract, dao_type])
 
   const { data: rewards, isLoading: areRewardsLoading } = useMyDaoRewardsQuery(tokensToCheck ? {
-    fundsDistributorAddress: fundsDistributorContract,
+    fundsDistributorAddress: funds_distributor_contract,
     nativeDenoms: Array.from(tokensToCheck.native),
     cw20Assets: Array.from(tokensToCheck.cw20),
   } : undefined)
@@ -56,6 +57,14 @@ export const RewardsPanel = () => {
   return (
     <Panel>
       <TitledContent title="Rewards">
+        <HStack alignItems="center" gap={8}>
+          <Text color="supporting">
+            <InfoIcon />
+          </Text>
+          <Text color="supporting">
+            Only whitelisted tokens are displayed.
+          </Text>
+        </HStack>
         <VStack fullHeight gap={40} justifyContent="space-between">
           {areNoRewards ? <Text>Nothing to claim</Text> : (
             <>
@@ -71,7 +80,7 @@ export const RewardsPanel = () => {
                   // try to claim everything just in case
                   const { cw20, native } = assertDefined(tokensToCheck)
                   claimRewards({
-                    fundsDistributorAddress: fundsDistributorContract,
+                    fundsDistributorAddress: funds_distributor_contract,
                     cw20Assets: Array.from(cw20),
                     nativeDenoms: Array.from(native),
                   });

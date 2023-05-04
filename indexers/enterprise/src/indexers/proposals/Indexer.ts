@@ -1,6 +1,6 @@
 import { EventIndexer, IndexFnOptions } from 'indexers/EventIndexer';
 import { Entity, ProposalKey } from './types';
-import { LCDClient } from '@terra-money/terra.js';
+import { LCDClient } from '@terra-money/feather.js';
 import { TableNames, DAOS_PK_NAME, DAOS_SK_NAME } from 'initializers';
 import { batch, createLCDClient } from '@apps-shared/indexers/utils';
 import { KeySelector } from '@apps-shared/indexers/services/persistence';
@@ -131,7 +131,8 @@ export class Indexer extends EventIndexer<Entity> {
       abstainVotes,
       vetoVotes,
       totalVotes: response.total_votes_available,
-      type: response.proposal.proposal_type
+      type: response.proposal.proposal_type,
+      proposer: response.proposal.proposer
     };
   };
 

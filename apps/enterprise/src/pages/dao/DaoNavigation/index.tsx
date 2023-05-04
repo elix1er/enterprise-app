@@ -27,8 +27,9 @@ const daoViewPath: Record<DaoView, string> = {
 
 export const DaoNavigation = () => {
   const dao = useCurrentDao();
+  // @ts-ignore
   const options =
-    dao.type === 'multisig' ? daoView.filter((v) => v !== 'staking') : daoView.filter((v) => v !== 'members');
+    dao.dao_type === 'multisig' ? daoView.filter((v) => v !== 'staking') : daoView.filter((v) => v !== 'members');
 
   const { pathname } = useLocation();
 

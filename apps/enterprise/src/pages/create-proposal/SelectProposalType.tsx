@@ -21,6 +21,7 @@ import { capitalizeFirstLetter } from 'lib/shared/utils/capitalizeFirstLetter';
 import styles from './SelectProposalType.module.sass';
 import { ExternalLink } from 'lib/navigation/Link/ExternalLink';
 import { ShyTextButton } from 'lib/ui/buttons/ShyTextButton';
+import { toDao } from 'dao/utils/toDao';
 
 const title = 'Create a proposal';
 const contractsProposalTypeRecord: Record<CouncilProposalActionType, ProposalType> = {
@@ -42,7 +43,7 @@ export const proposalDescription: Record<ProposalType, ReactNode> = {
   members: 'Add/remove members from the Multisig',
   spend: 'Submit this proposal to send assets in your treasury to another address',
   mint: 'Mint DAO governance tokens to accounts. This only works if the minter of the CW20 token is the DAO treasury address.',
-  burn: 'Undelegate LUNA from a validator that you have delegated to',
+  burn: 'Burn DAO governance tokens from accounts. This only works if the burner of the CW20 token is the DAO treasury address.',
   delegate: 'Delegate LUNA in your treasury with a validator of your choice to earn staking rewards',
   metadata: 'Update metadata of your DAO',
   undelegate: 'Undelegate LUNA from a validator that you have delegated to',
@@ -50,6 +51,7 @@ export const proposalDescription: Record<ProposalType, ReactNode> = {
   council: '',
   mintNft:
     'Mint a new DAO governance NFT to an account. This only works if the minter of the NFT is the DAO treasury address.',
+  minWeightForRewards: 'Update the minimum weight for rewards',
 };
 
 // TODO: turn into a reusable component
@@ -125,7 +127,7 @@ export const SelectProposalType = () => {
   );
 
   const renderVotingTypePicker = () => {
-    if (!dao?.council) return null;
+    if (!dao?.dao_council) return null;
 
     return (
       <PrimarySelect
@@ -141,7 +143,7 @@ export const SelectProposalType = () => {
   };
 
   const renderOptions = () => {
-    const options = getProposalOptions(dao, proposalVotingType);
+    const options = getProposalOptions(toDao(dao), proposalVotingType);
 
     if (proposalVotingType === 'council' && !amICouncilMember) {
       return <Text>Only council members can create emergency proposals.</Text>;

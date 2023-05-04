@@ -5,7 +5,7 @@ import { IconButton, SearchInput } from 'components/primitives';
 import { ResponsiveView } from 'lib/ui/ResponsiveView';
 import { VStack } from 'lib/ui/Stack';
 import { Text } from 'lib/ui/Text';
-import { useDAOsQuery } from 'queries';
+import { QUERY_KEY, useDAOsQuery } from 'queries';
 import { useEffect, useRef, useState } from 'react';
 import { Header } from './Header';
 import { List } from './List';
@@ -14,6 +14,8 @@ import { ReactComponent as ErrorIcon } from 'components/assets/Error.svg';
 import { enterprise } from 'types/contracts';
 import { daoTypes } from 'dao';
 import { DaoFilter } from './DaoFilter';
+import { IndexersAreRequired } from 'settings/components/IndexersAreRequired';
+import { useDebounceSearch } from 'hooks/useDebounce';
 
 const MAX_PREVIEW_SIZE = 100;
 
@@ -38,46 +40,29 @@ export const Page = () => {
   }, [showDropdown]);
 
 
-  const [search, setSearch] = useState({
-    input: '',
-    searchText: '',
-  });
+  const [searchText, setSearchText] = useState('');
+  const debouncedSearchText = useDebounceSearch(searchText, 500);
+  const [daosQueryKey, setDaosQueryKey] = useState<string>(QUERY_KEY.DAOS)
+
+  useEffect(() => {
+    setDaosQueryKey(debouncedSearchText === '' ? QUERY_KEY.DAOS : `${QUERY_KEY.DAOS}-${debouncedSearchText}`);
+  }, [debouncedSearchText]);
 
   const { data, isLoading } = useDAOsQuery({
-    query: search.searchText,
+    query: debouncedSearchText,
     limit: MAX_PREVIEW_SIZE,
+    queryKey: daosQueryKey
   });
 
   const items = data?.filter(item => daoTypesToDisplay.includes(item.type));
 
   const searchInput = (
     <SearchInput
-      value={search.input}
-      onChange={(input) =>
-        setSearch((previous) => {
-          return {
-            ...previous,
-            input,
-          };
-        })
-      }
+      value={searchText}
+      onChange={setSearchText}
       onClear={() => {
-        setSearch((previous) => {
-          return {
-            ...previous,
-            input: '',
-            searchText: '',
-          };
-        });
+        setSearchText('')
       }}
-      onSearch={() =>
-        setSearch((previous) => {
-          return {
-            ...previous,
-            searchText: previous.input,
-          };
-        })
-      }
     />
   );
 
@@ -88,6 +73,22 @@ export const Page = () => {
     />
   )
 
+  const noResults = (
+    <Container className={styles.noResultsContainer}>
+      <IconButton
+        className={styles.Icon}
+        onClick={() =>
+          setSearchText('')
+        }
+      >
+        <ErrorIcon />
+      </IconButton>
+      <Text className={styles.noResultsLabel}>
+        We couldn’t find DAOs matching your criteria. Please try again.
+      </Text>
+    </Container>
+  )
+
   return (
     <Navigation>
       <ResponsiveView
@@ -96,27 +97,14 @@ export const Page = () => {
             <Text size={24} weight="bold">
               DAOs
             </Text>
-            {searchInput}
-            {data && data?.length ? (
-              <List items={items} isLoading={isLoading} />
-            ) : (
-              <Container className={styles.noResultsContainer}>
-                <IconButton
-                  className={styles.Icon}
-                  onClick={() =>
-                    setSearch({
-                      input: '',
-                      searchText: '',
-                    })
-                  }
-                >
-                  <ErrorIcon />
-                </IconButton>
-                <Text className={styles.noResultsLabel}>
-                  We couldn’t find DAOs matching your criteria. Please try again.
-                </Text>
-              </Container>
-            )}
+            <IndexersAreRequired>
+              {searchInput}
+              {data && data?.length ? (
+                <List items={items} isLoading={isLoading} />
+              ) : (
+                noResults
+              )}
+            </IndexersAreRequired>
           </VStack>
         )}
         normal={() => (
@@ -145,26 +133,13 @@ export const Page = () => {
                 />
               }
             >
-              {data && data?.length ? (
-                <List items={items} isLoading={isLoading} />
-              ) : (
-                <Container className={styles.noResultsContainer}>
-                  <IconButton
-                    className={styles.Icon}
-                    onClick={() =>
-                      setSearch({
-                        input: '',
-                        searchText: '',
-                      })
-                    }
-                  >
-                    <ErrorIcon />
-                  </IconButton>
-                  <Text className={styles.noResultsLabel}>
-                    We couldn’t find DAOs matching your criteria. Please try again.
-                  </Text>
-                </Container>
-              )}
+              <IndexersAreRequired>
+                {data && data?.length ? (
+                  <List items={items} isLoading={isLoading} />
+                ) : (
+                  noResults
+                )}
+              </IndexersAreRequired>
             </PageLayout>
           </ScrollableContainer>
         )}
