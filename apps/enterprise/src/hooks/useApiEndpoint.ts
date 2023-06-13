@@ -1,11 +1,11 @@
-import { useWallet } from '@terra-money/wallet-provider';
+import { useNetworkName } from '@terra-money/apps/hooks';
 import { Frequency } from 'utils';
 
 const API_ENDPOINTS: Record<string, string> = {
   mainnet: 'https://g4cfb9d6qf.execute-api.us-east-1.amazonaws.com/v1',
   //overriding the api gw endpoint to point at the staging environment in staging branch
-  //testnet: 'https://jdrv0zpoc4.execute-api.us-east-1.amazonaws.com/v1',
-  testnet: 'https://4me4sow9wd.execute-api.us-east-1.amazonaws.com/v1',
+  testnet: 'https://jdrv0zpoc4.execute-api.us-east-1.amazonaws.com/v1',
+  //testnet: 'https://4me4sow9wd.execute-api.us-east-1.amazonaws.com/v1',
   //testnet: 'http://localhost:3000',
   localterra: 'http://localhost:3000',
 };
@@ -36,7 +36,7 @@ type HealthCheckEndpoint = {
 
 type DaosEndpoint = {
   path: 'v1/daos';
-  params: { query?: string; limit: number; direction?: Direction };
+  params: { query?: string; limit?: number; direction?: Direction };
 };
 
 type DaoEndpoint = {
@@ -86,7 +86,7 @@ export const createApiEndpoint = (network: string, endpoint: ApiEndpoints): stri
 };
 
 export const useApiEndpoint = (endpoint: ApiEndpoints): string => {
-  const { network } = useWallet();
+  const networkName = useNetworkName();
 
-  return createApiEndpoint(network.name, endpoint);
+  return createApiEndpoint(networkName, endpoint);
 };

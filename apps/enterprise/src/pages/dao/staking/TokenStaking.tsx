@@ -110,7 +110,8 @@ export const TokenStakingConnectedView = () => {
                 <Text variant="label" className={styles.title}>
                   Voting power
                 </Text>
-                <NumericPanel className={styles.stakedVotingPanel}
+                <NumericPanel
+                  className={styles.stakedVotingPanel}
                   value={demicrofy(walletStaked, tokenDecimals)}
                   decimals={2}
                   suffix={
@@ -151,7 +152,7 @@ export const TokenStakingConnectedView = () => {
                       kind="secondary"
                       isLoading={isLoading}
                       isDisabled={isUnstakeDisabled}
-                      tooltipText={isUnstakeDisabled && `You don't have staked tokens`}
+                      tooltipText={isUnstakeDisabled && `You don't have any staked tokens`}
                       onClick={onOpen}
                     >
                       Unstake
@@ -181,7 +182,7 @@ export const TokenStakingConnectedView = () => {
         <VStack gap={16}>
           <NumericPanel
             className={styles.claim}
-            title="Claimable tokens"
+            title="Claim Unstaked Tokens"
             value={demicrofy(claimableAmount, tokenDecimals)}
             decimals={2}
             suffix={tokenSymbol}

@@ -1,7 +1,7 @@
 import { useQuery, UseQueryOptions, UseQueryResult } from 'react-query';
 import { QUERY_KEY } from 'queries';
-import { NetworkInfo, useWallet } from '@terra-money/wallet-provider';
-import { LCDClient } from '@terra-money/terra.js';
+import { useLCDClient } from '@terra-money/wallet-provider';
+import { LCDClient } from '@terra-money/feather.js';
 
 export interface CW20TokenInfoResponse {
   name: string;
@@ -10,18 +10,7 @@ export interface CW20TokenInfoResponse {
   total_supply: string;
 }
 
-export const fetchCW20TokenInfo = async (
-  networkOrLCD: NetworkInfo | LCDClient,
-  tokenAddr: string
-): Promise<CW20TokenInfoResponse> => {
-  const lcd =
-    networkOrLCD instanceof LCDClient
-      ? networkOrLCD
-      : new LCDClient({
-          URL: networkOrLCD.lcd,
-          chainID: networkOrLCD.chainID,
-        });
-
+export const fetchCW20TokenInfo = async (lcd: LCDClient, tokenAddr: string): Promise<CW20TokenInfoResponse> => {
   const response = await lcd.wasm.contractQuery<CW20TokenInfoResponse>(tokenAddr, {
     token_info: {},
   });
@@ -33,12 +22,12 @@ export const useCW20TokenInfoQuery = (
   tokenAddress: string,
   options: Partial<Pick<UseQueryOptions, 'enabled'>> = { enabled: true }
 ): UseQueryResult<CW20TokenInfoResponse> => {
-  const { network } = useWallet();
+  const lcd = useLCDClient();
 
   return useQuery(
     [QUERY_KEY.CW20_TOKEN_QUERY, tokenAddress],
     () => {
-      return fetchCW20TokenInfo(network, tokenAddress);
+      return fetchCW20TokenInfo(lcd, tokenAddress);
     },
     {
       refetchOnMount: false,

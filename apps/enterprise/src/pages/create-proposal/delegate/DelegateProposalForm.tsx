@@ -20,7 +20,7 @@ interface DelegateProposalFormSchema {
 
 export const DelegateProposalForm = () => {
   const treasuryTokens = useCurrentDaoTreasuryTokens();
-  const token = treasuryTokens.find((token) => token.key === 'uluna');
+  const token = treasuryTokens.find((token) => token.id === 'uluna');
 
   const formSchema: z.ZodType<DelegateProposalFormSchema> = z.object({
     address: zodAddressValidator,
@@ -28,7 +28,7 @@ export const DelegateProposalForm = () => {
       .number()
       .positive()
       .gt(0)
-      .max(token ? demicrofy(token.amount, token.decimals).toNumber() : 0),
+      .max(token ? demicrofy(token.balance, token.decimals).toNumber() : 0),
   });
 
   const {
@@ -43,7 +43,7 @@ export const DelegateProposalForm = () => {
 
   return (
     <ProposalForm
-      disabled={!isValid || !token || !token.amount}
+      disabled={!isValid || !token || !token.balance}
       getProposalActions={() => {
         const { amount, address } = getValues();
         const { decimals } = assertDefined(token);
@@ -64,8 +64,8 @@ export const DelegateProposalForm = () => {
       }}
     >
       <VStack alignItems="start" gap={8}>
-        <TextInput {...register('address')} label="Validator address" placeholder="Enter address" />
-        {token && Big(token.amount).gt(0) ? (
+        <TextInput {...register('address')} label="Validator address" placeholder="Enter an address" />
+        {token && Big(token.balance).gt(0) ? (
           <Controller
             control={control}
             name="amount"
@@ -74,17 +74,17 @@ export const DelegateProposalForm = () => {
                 type="number"
                 error={errors.amount?.message}
                 label="LUNA amount"
-                placeholder="Enter amount"
+                placeholder="Enter an amount"
                 onValueChange={onChange}
                 value={value}
                 onBlur={onBlur}
                 ref={ref}
-                max={demicrofy(token.amount, token.decimals).toNumber()}
+                max={demicrofy(token.balance, token.decimals).toNumber()}
               />
             )}
           />
         ) : (
-          <Text color="alert">Treasury doesn't have LUNA</Text>
+          <Text color="alert">Treasury doesn't have any LUNA</Text>
         )}
       </VStack>
     </ProposalForm>

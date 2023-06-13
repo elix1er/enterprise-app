@@ -1,6 +1,5 @@
 import { Stack } from '@mui/material';
 import { CW20Addr } from '@terra-money/apps/types';
-import { useConnectedWallet } from '@terra-money/wallet-provider';
 import { Button, IconButton, Text, Tooltip } from 'components/primitives';
 import { useProposalVoteQuery, useVotingPowerQuery } from 'queries';
 import { ReactNode, useState } from 'react';
@@ -15,6 +14,7 @@ import { ReactComponent as VoteVeto } from 'components/assets/VoteVeto.svg';
 import styles from './CastVote.module.sass';
 import classNames from 'classnames';
 import { useAmICouncilMember } from 'dao/hooks/useAmICouncilMember';
+import { useMyAddress } from 'chain/hooks/useMyAddress';
 
 interface VoteOption {
   outcome: enterprise.VoteOutcome;
@@ -32,7 +32,7 @@ export const VoteOptions: Array<VoteOption> = [
 export const CastVote = () => {
   const proposal = useCurrentProposal();
 
-  const connectedWallet = useConnectedWallet();
+  const myAddress = useMyAddress();
 
   const navigate = useNavigate();
 
@@ -44,21 +44,16 @@ export const CastVote = () => {
 
   const { data: votingPower, isLoading: isVotingPowerLoading } = useVotingPowerQuery(
     proposal.dao.address as CW20Addr,
-    connectedWallet?.terraAddress
+    myAddress
   );
 
-  const { data: myVote } = useProposalVoteQuery(
-    proposal.dao.address,
-    connectedWallet?.walletAddress ?? '',
-    proposal.id,
-    {
-      enabled: Boolean(connectedWallet?.walletAddress),
-    }
-  );
+  const { data: myVote } = useProposalVoteQuery(proposal.dao.address, myAddress ?? '', proposal.id, {
+    enabled: Boolean(myAddress),
+  });
 
-  if (!connectedWallet) {
+  if (!myAddress) {
     // TODO: show a button to connect a wallet
-    return <Text variant="text">Connect wallet to vote</Text>;
+    return <Text variant="text">Connect your wallet to vote</Text>;
   }
 
   if (isVotingPowerLoading) {
@@ -67,7 +62,7 @@ export const CastVote = () => {
   }
 
   if (proposal.type === 'council' && !amICouncilMember) {
-    return <Text variant="text">Council members only</Text>;
+    return <Text variant="text">Only council members can vote</Text>;
   }
 
   if (proposal.type === 'general' && votingPower && votingPower.eq(0)) {

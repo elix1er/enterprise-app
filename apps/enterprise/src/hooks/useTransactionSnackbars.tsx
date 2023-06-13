@@ -7,17 +7,15 @@ import {
 import { useSnackbar } from 'notistack';
 import { useRefetchQueries } from 'queries';
 import { TX_KEY } from 'tx';
-import { useRefCallback } from '@terra-money/apps/hooks';
+import { useNetworkName, useRefCallback } from '@terra-money/apps/hooks';
 import { TransactionSnackbar } from 'components/snackbar';
 import { indexerCompletion } from 'utils/indexerCompletion';
-import { useWallet } from '@terra-money/wallet-provider';
-import { useAreIndexersEnabled } from 'state/hooks/useAreIndexersEnabled';
 
 type TxMessages = Record<TX_KEY, string>;
 
 const CompletedSnackbarMessages: TxMessages = {
-  [TX_KEY.CREATE_DAO]: 'The DAO was created successfully.',
-  [TX_KEY.STAKE_TOKEN]: 'Your tokens were staked.',
+  [TX_KEY.CREATE_DAO]: 'Your DAO was created successfully.',
+  [TX_KEY.STAKE_TOKEN]: 'Your tokens are staked.',
   [TX_KEY.UNSTAKE_TOKEN]: 'Your tokens were unstaked.',
   [TX_KEY.STAKE_NFT]: 'Your NFTs were staked.',
   [TX_KEY.UNSTAKE_NFT]: 'Your NFTs were unstaked.',
@@ -46,12 +44,11 @@ const FailedSnackbarMessages: TxMessages = {
 };
 
 export const useTransactionSnackbars = () => {
-  const { network } = useWallet();
+  const networkName = useNetworkName();
 
   const refetch = useRefetchQueries();
 
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
-  const [areIndexersEnabled] = useAreIndexersEnabled()
 
   const onPending = useRefCallback(
     (transaction: PendingTransaction) => {
@@ -75,10 +72,9 @@ export const useTransactionSnackbars = () => {
 
   const onCompleted = useRefCallback(
     (transaction: CompletedTransaction) => {
-      if (!areIndexersEnabled) return;
       const txKey = transaction.payload['txKey'] as TX_KEY;
       indexerCompletion({
-        network,
+        networkName,
         height: transaction.height,
         txKey,
         callback: () => {
@@ -100,7 +96,7 @@ export const useTransactionSnackbars = () => {
         },
       });
     },
-    [refetch, enqueueSnackbar, closeSnackbar, areIndexersEnabled]
+    [refetch, enqueueSnackbar, closeSnackbar]
   );
 
   const onFailed = useRefCallback(

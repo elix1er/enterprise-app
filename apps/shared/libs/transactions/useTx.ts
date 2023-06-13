@@ -1,11 +1,11 @@
-import { CreateTxOptions } from '@terra-money/terra.js';
+import { CreateTxOptions } from '@terra-money/feather.js';
 import { useConnectedWallet, useLCDClient, ConnectedWallet, TxResult } from '@terra-money/wallet-provider';
 import { useAsyncFn } from 'react-use';
 import { useTransactionsContext } from '.';
 import { addTxAction } from './actions';
 import { FailedTransaction, TransactionPayload, TransactionStatus } from './types';
 import { failedSubject } from './rx';
-import { useRefCallback } from '../../hooks';
+import { useChainID, useRefCallback } from '../../hooks';
 
 type TxOrFactory<Options> =
   | CreateTxOptions
@@ -28,12 +28,14 @@ const useTx = <Options>(
 
   const lcd = useLCDClient();
 
+  const chainID = useChainID()
+
   const wallet = useConnectedWallet();
 
   const txCallback = useRefCallback(
     async (options: Options) => {
       if (wallet === undefined || wallet.availablePost === false) {
-        throw new Error('The wallet is not connected or is unable to post a message.');
+        throw new Error('Your wallet is not connected or is unable to post a message.');
       }
 
       const tx = typeof txOrFactory === 'function' ? txOrFactory({ ...options, wallet }) : txOrFactory;
@@ -59,7 +61,8 @@ const useTx = <Options>(
       // however we are displaying a pending operation status so
       // we really want the response to complete when the tx has been
       // submitted to the mempool
-      const completion = dispatch(addTxAction(txResult.result.txhash, payload, lcd));
+      console.log('useTx(): dispatching addTxAction:', txResult.result)
+      const completion = dispatch(addTxAction(txResult.result.txhash, payload, lcd, chainID));
 
       if (useTxOptions.waitForCompletion) {
         await completion;

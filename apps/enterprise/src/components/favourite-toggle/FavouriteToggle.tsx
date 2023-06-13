@@ -1,9 +1,9 @@
 import { IconButton } from 'components/primitives';
-import { usePersonalization } from 'libs/personalization';
 import { ReactComponent as StarIcon } from 'components/assets/Star.svg';
 import classNames from 'classnames';
 import { DAO } from 'types';
 import styles from './FavouriteToggle.module.sass';
+import { usePersonalization } from 'libs/personalization/PersonalizationProvider';
 
 type FavouriteToggleSize = 'small' | 'medium';
 

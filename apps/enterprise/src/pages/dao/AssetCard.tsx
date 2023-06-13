@@ -1,42 +1,37 @@
 import { Container } from '@terra-money/apps/components';
 import { TokenIcon } from 'components/token-icon';
-import { Text } from 'components/primitives';
-import { demicrofy, formatAmount } from '@terra-money/apps/libs/formatting';
-import styles from './AssetCard.module.sass'
-import { TreasuryToken } from 'queries';
-import { HStack } from 'lib/ui/Stack';
-import { assertDefined, toPercents } from '@terra-money/apps/utils';
-import Big from 'big.js';
+import { formatAmount } from '@terra-money/apps/libs/formatting';
+import styles from './AssetCard.module.sass';
+import { toPercents } from '@terra-money/apps/utils';
+import { AssetInfoWithPrice, getAssetBalanceInUsd } from 'chain/Asset';
+import { SeparatedBy, dotSeparator } from 'lib/ui/SeparatedBy';
+import { Text } from 'lib/ui/Text';
 
 interface AssetCardProps {
-    className?: string;
-    token: TreasuryToken;
-    treasuryTotalInUSD?: Big | undefined;
+  className?: string;
+  token: AssetInfoWithPrice;
+  treasuryTotalInUSD: number;
 }
 
-export const AssetCard = ({token, treasuryTotalInUSD} : AssetCardProps) => {
-    return (
-        <>
-        <Container className={styles.assetCardContainer}>
-            <Container className={styles.iconContainer}>
-            <TokenIcon className={styles.icon} symbol={token.symbol} path={token.icon} />
-            </Container>
-            <Container className={styles.assetContainer}>
-                <Text variant='heading4'>
-                    {token.symbol}
-                </Text>
-                <HStack justifyContent="space-between" gap={8}>
-                <Text variant='label'>
-                {formatAmount(demicrofy(token.amount, token.decimals))}{' '}
-                </Text>
-                <Text variant='label'>
-                {treasuryTotalInUSD && toPercents(assertDefined(token.usdAmount).div(treasuryTotalInUSD).toNumber(), 'round')}
-                </Text>
-                </HStack>
-                
-            </Container>
+export const AssetCard = ({ token, treasuryTotalInUSD }: AssetCardProps) => {
+  return (
+    <>
+      <Container className={styles.assetCardContainer}>
+        <Container className={styles.iconContainer}>
+          <TokenIcon className={styles.icon} symbol={token.symbol} path={token.icon} />
         </Container>
-         
-        </>
-    )
-}
+        <Container className={styles.assetContainer}>
+          <Text>{token.symbol || token.name}</Text>
+          <Text as="div" color="supporting">
+            {token.usd > 0 && (
+              <SeparatedBy separator={dotSeparator}>
+                <div>{formatAmount(getAssetBalanceInUsd(token))} $</div>
+                {treasuryTotalInUSD > 0 && <div>{toPercents(getAssetBalanceInUsd(token) / treasuryTotalInUSD, 'round')}</div>}
+              </SeparatedBy>
+            )}
+          </Text>
+        </Container>
+      </Container>
+    </>
+  );
+};

@@ -1,18 +1,28 @@
 import { Container } from '@terra-money/apps/components';
 import classNames from 'classnames';
-import { Text } from 'components/primitives';
+import { Text } from 'lib/ui/Text';
 import { DAO } from 'types';
 import { Skeleton } from 'components/skeleton';
 import { useNavigate } from 'react-router';
 import { FavouriteToggle } from 'components/favourite-toggle';
 import styles from './DAOCard.module.sass';
 import { DAOLogo } from 'components/dao-logo';
+import { formatAmount } from '@terra-money/apps/libs/formatting';
+import { enterprise } from 'types/contracts';
+import { SeparatedBy, dotSeparator } from 'lib/ui/SeparatedBy';
+import { SimpleTooltip } from 'lib/ui/popover/SimpleTooltip';
 
 interface DAOCardProps {
   className?: string;
   dao?: DAO;
   skeleton: boolean;
 }
+
+const daoTypeName: Record<enterprise.DaoType, string> = {
+  multisig: 'Multisig',
+  nft: 'NFT DAO',
+  token: 'Token DAO',
+};
 
 export const DAOCard = (props: DAOCardProps) => {
   const { className, dao, skeleton } = props;
@@ -29,26 +39,28 @@ export const DAOCard = (props: DAOCardProps) => {
     );
   }
 
-  const description =
-    dao.type === undefined
-      ? undefined
-      : dao.type === 'multisig'
-        ? 'Multisig DAO'
-        : dao.type === 'nft'
-          ? 'NFT Community DAO'
-          : 'Community Token DAO';
+  const { tvl } = dao;
 
   return (
     <Container className={classNames(className, styles.root)} onClick={() => navigate(`/dao/${dao.address}`)}>
       <div className={styles.logo}>
         <DAOLogo logo={dao.logo} />
       </div>
-      <Text className={styles.name} variant="heading4">
+      <Text className={styles.name} weight="semibold" size={14}>
         {dao.name}
       </Text>
-      <Text className={styles.type} variant="label">
-        {description}
-      </Text>
+      <SeparatedBy separator={dotSeparator}>
+        <Text size={14} weight="semibold" color="supporting">
+          {daoTypeName[dao.type]}
+        </Text>
+        {tvl && tvl > 0 && (
+          <SimpleTooltip text="Total value locked">
+            <Text size={14} weight="semibold" color="supporting">
+              $ {formatAmount(tvl)}
+            </Text>
+          </SimpleTooltip>
+        )}
+      </SeparatedBy>
       <FavouriteToggle className={styles.favourite} dao={dao} />
     </Container>
   );

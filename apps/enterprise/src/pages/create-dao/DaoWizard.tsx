@@ -48,7 +48,7 @@ export const DaoWizard = () => {
         const address = transaction.logs[0].eventsByType.wasm.dao_address[0];
         navigate(`/dao/${address}`);
       } catch (error) {
-        reportError(error, { msg: 'Fail to extract dao_address from transaction logs' });
+        reportError(error, { msg: 'Failed to extract dao_address from transaction logs' });
       }
     },
     [txResult, setIsFinishLoading]
@@ -56,21 +56,21 @@ export const DaoWizard = () => {
 
   const onFailed = useRefCallback(() => {
     setIsFinishLoading(false);
-  }, [setIsFinishLoading])
+  }, [setIsFinishLoading]);
 
   const onCancelled = useRefCallback(() => {
     setIsFinishLoading(false);
-  }, [setIsFinishLoading])
+  }, [setIsFinishLoading]);
 
   useTransactionSubscribers({
     onCompleted,
     onFailed,
-    onCancelled
+    onCancelled,
   });
 
-  const isBackVisible = steps.length > 1
-  const isNextVisible = steps.length < predictedSteps.length
-  const isFinishVisible = steps.length === predictedSteps.length
+  const isBackVisible = steps.length > 1;
+  const isNextVisible = steps.length < predictedSteps.length;
+  const isFinishVisible = steps.length === predictedSteps.length;
 
   const onFinish = async () => {
     try {
@@ -80,34 +80,33 @@ export const DaoWizard = () => {
       setIsFinishLoading(false);
       console.log(error);
     }
-  }
+  };
 
   const percentageComplete = Math.trunc(((steps.length - 1) / predictedSteps.length) * 100);
 
   const step = getLast(steps);
 
   return (
-    <WizardLayout percentageComplete={percentageComplete}
+    <WizardLayout
+      percentageComplete={percentageComplete}
       footer={
-        (
-          <SameWidthChildrenRow fullWidth gap={16} childrenWidth={140}>
-            {isBackVisible && (
-              <PrimaryButton kind="secondary" onClick={back}>
-                Back
-              </PrimaryButton>
-            )}
-            {isNextVisible && (
-              <PrimaryButton onClick={forward} disabled={!isValid}>
-                Next
-              </PrimaryButton>
-            )}
-            {isFinishVisible && (
-              <PrimaryButton onClick={onFinish} isLoading={isFinishLoading}>
-                Finish
-              </PrimaryButton>
-            )}
-          </SameWidthChildrenRow>
-        )
+        <SameWidthChildrenRow fullWidth gap={16} childrenWidth={140}>
+          {isBackVisible && (
+            <PrimaryButton kind="secondary" onClick={back}>
+              Back
+            </PrimaryButton>
+          )}
+          {isNextVisible && (
+            <PrimaryButton onClick={forward} disabled={!isValid}>
+              Next
+            </PrimaryButton>
+          )}
+          {isFinishVisible && (
+            <PrimaryButton onClick={onFinish} isLoading={isFinishLoading}>
+              Finish
+            </PrimaryButton>
+          )}
+        </SameWidthChildrenRow>
       }
     >
       <ConditionalRender

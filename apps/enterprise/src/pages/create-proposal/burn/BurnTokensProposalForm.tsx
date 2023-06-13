@@ -18,14 +18,14 @@ interface MintTokensProposalFormSchema {
 export const BurnTokensProposalForm = () => {
   const dao = useCurrentDao();
   const treasuryTokens = useCurrentDaoTreasuryTokens();
-  const token = treasuryTokens.find((token) => token.key === dao.dao_membership_contract);
+  const token = treasuryTokens.find((token) => token.id === dao.dao_membership_contract);
 
   const formSchema: z.ZodType<MintTokensProposalFormSchema> = z.object({
     amount: z
       .number()
       .positive()
       .gt(0)
-      .max(token ? demicrofy(token.amount, token.decimals).toNumber() : 0),
+      .max(token ? demicrofy(token.balance, token.decimals).toNumber() : 0),
   });
 
   const {
@@ -39,7 +39,7 @@ export const BurnTokensProposalForm = () => {
 
   return (
     <ProposalForm
-      disabled={!isValid || !token || !token.amount}
+      disabled={!isValid || !token || !token.balance}
       getProposalActions={() => {
         const { amount } = getValues();
         const { decimals } = assertDefined(token);
@@ -51,7 +51,7 @@ export const BurnTokensProposalForm = () => {
                 toBurnTokensMsg({
                   amount,
                   tokenDecimals: decimals,
-                  tokenAddress: dao.dao_membership_contract
+                  tokenAddress: dao.dao_membership_contract,
                 }),
               ],
             },
@@ -59,7 +59,7 @@ export const BurnTokensProposalForm = () => {
         ];
       }}
     >
-      {token && Big(token.amount).gt(0) ? (
+      {token && Big(token.balance).gt(0) ? (
         <Controller
           control={control}
           name="amount"
@@ -68,17 +68,17 @@ export const BurnTokensProposalForm = () => {
               type="number"
               error={errors.amount?.message}
               label="Amount"
-              placeholder="Enter amount"
+              placeholder="Enter an amount"
               onValueChange={onChange}
               value={value}
               onBlur={onBlur}
               ref={ref}
-              max={demicrofy(token.amount, token.decimals).toNumber()}
+              max={demicrofy(token.balance, token.decimals).toNumber()}
             />
           )}
         />
       ) : (
-        <Text color="alert">Treasury doesn't have DAO's tokens</Text>
+        <Text color="alert">The Treasury doesn't have any DAO tokens to burn. </Text>
       )}
     </ProposalForm>
   );

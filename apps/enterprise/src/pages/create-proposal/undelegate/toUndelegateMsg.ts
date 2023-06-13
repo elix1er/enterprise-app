@@ -7,21 +7,21 @@ interface DelegateMsgParams {
 }
 
 export interface UndelegateMsg {
-  amount: [{
+  amount: {
     denom: string;
     amount: string;
-  }];
+  };
   validator: string;
 }
 
 export const toUndelegateMsg = ({ amount, address }: DelegateMsgParams) => {
   const undelegate: UndelegateMsg = {
-    amount: [{
+    amount: {
       denom: 'uluna',
       amount: microfy(amount, lunaDecimals).toString(),
-    }],
+    },
     validator: address,
-  }
+  };
   return JSON.stringify({
     staking: {
       undelegate,

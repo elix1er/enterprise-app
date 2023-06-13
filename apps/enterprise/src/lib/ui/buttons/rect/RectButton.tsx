@@ -7,13 +7,13 @@ import { Spinner } from 'lib/ui/Spinner';
 
 import { UnstyledButton } from '../UnstyledButton';
 import { roundedCSS } from 'lib/ui/utils/roundedCSS';
-import { MouseEvent, useState } from 'react';
-import { Popover } from 'lib/ui/popover/Popover';
+import { MouseEvent } from 'react';
 import { useBoolean } from 'lib/shared/hooks/useBoolean';
+import { offset, shift, useFloating } from '@floating-ui/react';
 
 export const rectButtonSizes = ['xs', 's', 'm', 'l', 'xl'] as const;
 
-type RectButtonSize = typeof rectButtonSizes[number];
+type RectButtonSize = (typeof rectButtonSizes)[number];
 
 export type Props = React.ButtonHTMLAttributes<HTMLButtonElement> &
   ComponentWithChildrenProps & {
@@ -95,7 +95,7 @@ const tooltipAnimation = keyframes`
 const TooltipContainer = styled.div`
   border-radius: 4px;
   padding: 4px 8px;
-  background: ${({ theme }) => theme.colors.text.getVariant({ a: () => 1 }).toCssValue()};
+  background: ${({ theme }) => theme.colors.contrast.toCssValue()};
   color: ${({ theme }) => theme.colors.background.toCssValue()};
   font-size: 14px;
   max-width: 320px;
@@ -114,35 +114,49 @@ export const RectButton = ({
   onMouseLeave,
   ...rest
 }: Props) => {
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const { x, y, strategy, refs } = useFloating({
+    placement: 'bottom',
+    strategy: 'fixed',
+    middleware: [offset(4), shift()],
+  });
 
   const [isTooltipOpen, { unset: hideTooltip, set: showTooltip }] = useBoolean(false);
 
   const isTooltipEnabled = typeof isDisabled === 'string';
 
   return (
-    <Container
-      size={size}
-      isDisabled={!!isDisabled}
-      isLoading={isLoading}
-      onClick={isDisabled || isLoading ? undefined : onClick}
-      onMouseEnter={(event: MouseEvent<HTMLButtonElement>) => {
-        onMouseEnter?.(event);
-        isTooltipEnabled && showTooltip();
-      }}
-      onMouseLeave={(event: MouseEvent<HTMLButtonElement>) => {
-        onMouseLeave?.(event);
-        isTooltipEnabled && hideTooltip();
-      }}
-      ref={setAnchor}
-      {...rest}
-    >
-      <div className="content">{isLoading ? <Spinner /> : <>{children}</>}</div>
-      {anchor && isTooltipOpen && (
-        <Popover placement="bottom" anchor={anchor}>
-          <TooltipContainer>{isDisabled}</TooltipContainer>
-        </Popover>
+    <>
+      <Container
+        size={size}
+        isDisabled={!!isDisabled}
+        isLoading={isLoading}
+        onClick={isDisabled || isLoading ? undefined : onClick}
+        onMouseEnter={(event: MouseEvent<HTMLButtonElement>) => {
+          onMouseEnter?.(event);
+          isTooltipEnabled && showTooltip();
+        }}
+        onMouseLeave={(event: MouseEvent<HTMLButtonElement>) => {
+          onMouseLeave?.(event);
+          isTooltipEnabled && hideTooltip();
+        }}
+        ref={refs.setReference}
+        {...rest}
+      >
+        <div className="content">{isLoading ? <Spinner /> : <>{children}</>}</div>
+      </Container>
+      {isTooltipOpen && (
+        <TooltipContainer
+          ref={refs.setFloating}
+          style={{
+            position: strategy,
+            top: y ?? 0,
+            left: x ?? 0,
+            width: 'max-content',
+          }}
+        >
+          {isDisabled}
+        </TooltipContainer>
       )}
-    </Container>
+    </>
   );
 };

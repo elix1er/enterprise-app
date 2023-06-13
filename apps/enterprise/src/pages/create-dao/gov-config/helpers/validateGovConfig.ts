@@ -4,7 +4,7 @@ import { DaoGovConfigInput } from '../DaoGovConfigInput';
 
 export const validateUnlockingPeriod = (unlockingPeriod: number, voteDuration: number) => {
   if (unlockingPeriod < voteDuration) {
-    return 'Unstaking duration cannot be shorter than proposal voting duration';
+    return 'The vote duration must be longer than the unlocking period.';
   }
 };
 
@@ -16,7 +16,7 @@ export const validateGovConfig = ({
   voteDuration,
   minimumDeposit,
   allowEarlyProposalExecution,
-  minimumWeightForRewards
+  minimumWeightForRewards,
 }: DaoGovConfigInput): FormState<DaoGovConfigInput> => {
   const formState: FormState<DaoGovConfigInput> = {
     quorum,
@@ -26,7 +26,7 @@ export const validateGovConfig = ({
     minimumDeposit,
     vetoThreshold,
     allowEarlyProposalExecution,
-    minimumWeightForRewards
+    minimumWeightForRewards,
   };
 
   formState.unlockingPeriodError = validateUnlockingPeriod(unlockingPeriod, voteDuration);

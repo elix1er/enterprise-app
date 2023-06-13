@@ -1,21 +1,19 @@
 import { useQuery } from 'react-query';
 import { QUERY_KEY } from 'queries';
-import { useWallet } from '@terra-money/wallet-provider';
 import { enterprise_factory } from 'types/contracts';
-import { contractQuery } from '@terra-money/apps/queries';
 import { useContractAddress } from '@terra-money/apps/hooks';
+import { useLCDClient } from '@terra-money/wallet-provider';
 
 export const useEnterpriseCodeIdsQuery = () => {
-  const { network } = useWallet();
+  const lcd = useLCDClient();
   const address = useContractAddress('enterprise-factory');
 
   return useQuery(
     [QUERY_KEY.CODE_IDS],
     async () => {
-      const { code_ids } = await contractQuery<
-        enterprise_factory.QueryMsg,
-        enterprise_factory.EnterpriseCodeIdsResponse
-      >(network, address, { enterprise_code_ids: {} });
+      const { code_ids } = await lcd.wasm.contractQuery<enterprise_factory.EnterpriseCodeIdsResponse>(address, {
+        enterprise_code_ids: {},
+      });
 
       return code_ids;
     },
@@ -26,10 +24,10 @@ export const useEnterpriseCodeIdsQuery = () => {
 };
 
 export const useEnterpriseLatestCodeIdQuery = () => {
-  const { data, ...result } = useEnterpriseCodeIdsQuery()
+  const { data, ...result } = useEnterpriseCodeIdsQuery();
 
   return {
     ...result,
-    data: data ? Math.max(...data.map(Number)) : undefined
-  }
+    data: data ? Math.max(...data.map(Number)) : undefined,
+  };
 };

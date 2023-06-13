@@ -1,5 +1,5 @@
 import { formatAmount } from '@terra-money/apps/libs/formatting';
-import { MsgExecuteContract } from '@terra-money/terra.js';
+import { MsgExecuteContract } from '@terra-money/feather.js';
 import { useAssertMyAddress } from 'chain/hooks/useAssertMyAddress';
 import { useEstimatedFeeQuery } from 'chain/hooks/useEstimatedFee';
 import { Spinner } from 'lib/ui/Spinner';
@@ -15,7 +15,6 @@ export const ExecuteProposalFee = () => {
   const msg = new MsgExecuteContract(sender, proposal.dao.address, getExecuteProposalMsg(proposal));
 
   const { data, isLoading } = useEstimatedFeeQuery([msg]);
-
 
   if (!isLoading && !data) return null;
 

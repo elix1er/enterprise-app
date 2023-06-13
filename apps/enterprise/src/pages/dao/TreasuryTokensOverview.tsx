@@ -1,19 +1,17 @@
-import { useTreasuryTokensQuery } from 'queries';
 import { Token } from 'types';
 import { u } from '@terra-money/apps/types';
-import Big, { BigSource } from 'big.js';
-import { assertDefined, sum } from '@terra-money/apps/utils';
-import { Throbber } from 'components/primitives';
-import { AnimateNumber } from '@terra-money/apps/components';
-import { formatAmount } from '@terra-money/apps/libs/formatting';
+import { BigSource } from 'big.js';
 import { Address } from 'components/address';
 import styled from 'styled-components';
 import { VStack } from 'lib/ui/Stack';
-import { Text } from 'lib/ui/Text';
 import { ResponsiveView } from 'lib/ui/ResponsiveView';
 import { DepositIntoTreasury } from './deposit';
 import { useCurrentDaoAddress } from 'dao/navigation';
 import { AssetCard } from './AssetCard';
+import { DaoTVL } from './DaoTVL';
+import { useDaoAssets } from 'queries/useDaoAssets';
+import { sum } from 'lib/shared/utils/sum';
+import { getAssetBalanceInUsd } from 'chain/Asset';
 
 export type TreasuryToken = Token & { amount: u<BigSource>; usdAmount?: BigSource };
 
@@ -31,12 +29,12 @@ const BasicInfoContainer = styled.div`
   justify-content: start;
   gap: 16px;
   border-radius: 12px;
-  background-color: #1D1F20;
+  background-color: #1d1f20;
   width: 100%;
   height: 64px;
   padding-left: 16px;
   margin-bottom: 10px;
-`
+`;
 
 const NormalScreenWidthContainer = styled.div`
   display: flex;
@@ -53,62 +51,29 @@ const SmallScreenWidthContainer = styled.div`
 `;
 
 export const TreasuryTokensOverview = () => {
-  const address = useCurrentDaoAddress()
+  const address = useCurrentDaoAddress();
 
-  const { data: tokenBalances } = useTreasuryTokensQuery(address);
-
-  const tokenBalancesWithPrice = tokenBalances
-    ? tokenBalances
-      .filter((t) => t.usdAmount)
-      .sort((a, b) => assertDefined(b.usdAmount).cmp(assertDefined(a.usdAmount)))
-    : undefined;
-
-  const treasuryTotalInUSD = tokenBalancesWithPrice
-    ? sum(tokenBalancesWithPrice.map((token) => assertDefined(token.usdAmount)))
-    : undefined;
-
-  const tokenBalancesWithoutPrice = tokenBalances
-    ? tokenBalances.filter((token) => token.usdAmount === undefined).sort((a, b) => Big(a.amount).cmp(b.amount))
-    : undefined;
-
-  // const renderPieChart = () => {
-  //   return (
-  //     <PieChartWr>
-  //       <TreasuryTokensPieChart tokens={tokenBalancesWithPrice || []} />
-  //     </PieChartWr>
-  //   );
-  // };
+  const { data: assets = [] } = useDaoAssets();
 
   const renderBasicInfo = () => {
     return (
       <BasicInfoContainer>
-        <Text color="supporting" size={14}>
-          Treasury Total Value:
-        </Text>
-        {treasuryTotalInUSD !== undefined ? (
-          <Text size={18} weight="semibold">
-            <AnimateNumber format={(v) => formatAmount(v)}>{treasuryTotalInUSD ?? 0}</AnimateNumber>
-          </Text>
-        ) : (
-          <Throbber variant="secondary" size="small" />
-        )}
+        <DaoTVL />
         <Address address={address} />
       </BasicInfoContainer>
-
     );
   };
 
   const renderAssets = () => {
+    const treasuryTotalInUSD = sum(assets.map(getAssetBalanceInUsd))
+
+    const sortedAssets = assets.sort((a, b) => getAssetBalanceInUsd(b) - getAssetBalanceInUsd(a))
+
     return (
       <AssetsContainer>
-        {treasuryTotalInUSD !== undefined &&
-          tokenBalancesWithPrice?.map((token, index) => (
-            <AssetCard token={token} treasuryTotalInUSD={treasuryTotalInUSD}></AssetCard>
-          ))}
-        {tokenBalancesWithoutPrice !== undefined &&
-          tokenBalancesWithoutPrice?.map((token, index) => (
-            <AssetCard token={token}></AssetCard>
-          ))}
+        {sortedAssets.map((asset, index) => (
+          <AssetCard key={index} token={asset} treasuryTotalInUSD={treasuryTotalInUSD}></AssetCard>
+        ))}
       </AssetsContainer>
     );
   };
@@ -117,9 +82,7 @@ export const TreasuryTokensOverview = () => {
     <ResponsiveView
       small={() => (
         <VStack gap={12}>
-          <SmallScreenWidthContainer>
-            {renderBasicInfo()}
-          </SmallScreenWidthContainer>
+          <SmallScreenWidthContainer>{renderBasicInfo()}</SmallScreenWidthContainer>
           {renderAssets()}
           <DepositIntoTreasury />
         </VStack>
