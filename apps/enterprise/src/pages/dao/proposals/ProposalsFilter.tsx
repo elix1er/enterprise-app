@@ -1,8 +1,8 @@
-import { PrimaryButton } from 'lib/ui/buttons/rect/PrimaryButton';
+import { Button } from 'lib/ui/buttons/Button';
 import { ShyTextButton } from 'lib/ui/buttons/ShyTextButton';
 import { Checkbox } from 'lib/ui/inputs/Checkbox/Checkbox';
 import { Line } from 'lib/ui/Line';
-import { OverlayMenu } from 'lib/ui/Menu/OverlayMenu';
+import { Menu } from 'lib/ui/Menu';
 import { VStack } from 'lib/ui/Stack';
 import { proposalStatuses, proposalStatusName } from 'proposal';
 import { enterprise } from 'types/contracts';
@@ -16,9 +16,9 @@ export const ProposalsFilter = ({ value, onChange }: ProposalsFilterProps) => {
   const areAllIncluded = proposalStatuses.every((status) => value.includes(status));
 
   return (
-    <OverlayMenu
+    <Menu
       title="Display proposal types"
-      content={
+      renderContent={() => (
         <VStack fullWidth alignItems="start" gap={12}>
           {proposalStatuses.map((daoType) => (
             <Checkbox
@@ -37,12 +37,10 @@ export const ProposalsFilter = ({ value, onChange }: ProposalsFilterProps) => {
             </>
           )}
         </VStack>
-      }
-      renderOpener={({ onClick, ref }) => (
-        <div ref={ref}>
-          <PrimaryButton kind="secondary" onClick={onClick}>
-            Filter
-          </PrimaryButton>
+      )}
+      renderOpener={(props) => (
+        <div {...props}>
+          <Button kind="secondary">Filter</Button>
         </div>
       )}
     />

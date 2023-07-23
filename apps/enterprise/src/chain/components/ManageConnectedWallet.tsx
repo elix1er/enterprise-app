@@ -1,41 +1,27 @@
 import { WalletButton } from 'chain/components/WalletButton';
-import { ResponsiveView } from 'lib/ui/ResponsiveView';
 import { ConnectedWalletSummary } from './ConnectedWallet/ConnectedWalletSummary';
-import { DisconnectWallet } from './ConnectedWallet/DisconnectWallet';
-import { Panel } from 'lib/ui/Panel/Panel';
 import { VStack } from 'lib/ui/Stack';
-import styled from 'styled-components';
-import { PopoverOpener } from 'lib/ui/popover/PopoverOpener';
-import { BottomSlideOverOpener } from 'lib/ui/BottomSlideOver/BottomSlideOverOpener';
-
-const Container = styled(Panel)`
-  background: ${({ theme }) => theme.colors.foreground.toCssValue()};
-`;
+import { Menu } from 'lib/ui/Menu';
+import { MenuOption } from 'lib/ui/Menu/MenuOption';
+import { useWallet } from '@terra-money/wallet-provider';
+import { LogOutIcon } from 'lib/ui/icons/LogOutIcon';
 
 export const ManageConnectedWallet = () => {
+  const { disconnect } = useWallet();
+
   return (
-    <ResponsiveView
-      normal={() => (
-        <PopoverOpener
-          placement="bottom-end"
-          renderOpener={({ onClick }) => <WalletButton onClick={onClick} />}
-          renderContent={() => (
-            <Container width={400}>
-              <VStack gap={32}>
-                <ConnectedWalletSummary />
-                <DisconnectWallet />
-              </VStack>
-            </Container>
-          )}
-        />
+    <Menu
+      title="Manage wallet"
+      renderOpener={(props) => (
+        <div {...props}>
+          <WalletButton />
+        </div>
       )}
-      small={() => (
-        <BottomSlideOverOpener
-          renderOpener={({ onClick }) => <WalletButton onClick={onClick} />}
-          title={<ConnectedWalletSummary />}
-        >
-          <DisconnectWallet />
-        </BottomSlideOverOpener>
+      renderContent={({ view }) => (
+        <VStack gap={8}>
+          <ConnectedWalletSummary />
+          <MenuOption view={view} icon={<LogOutIcon />} onSelect={disconnect} text="Disconnect wallet" />
+        </VStack>
       )}
     />
   );

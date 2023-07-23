@@ -1,5 +1,5 @@
 import classNames from 'classnames';
-import { Text } from 'components/primitives';
+import { Text } from 'lib/ui/Text';
 import { useDisplay } from 'hooks';
 import { useState } from 'react';
 import styles from './FeaturesExplorer.module.sass';
@@ -27,7 +27,7 @@ const features: Feature[] = [
     imageUrl: 'images/landing-dashboard.png',
   },
   {
-    title: 'Go interchain (coming soon!)',
+    title: 'Cross-chain functionality (coming soon!)',
     description: 'Create Enterprise DAOs on your favorite chains.',
     imageUrl: 'images/landing-dashboard.png',
   },
@@ -45,8 +45,10 @@ export const FeaturesExplorer = () => {
           if (isMobile) {
             return (
               <div key={index} className={styles.item}>
-                <Text variant="heading4">{title}</Text>
-                <Text variant="text">{description}</Text>
+                <Text weight="semibold">{title}</Text>
+                <Text size={14} color="supporting">
+                  {description}
+                </Text>
               </div>
             );
           }
@@ -58,8 +60,10 @@ export const FeaturesExplorer = () => {
               onMouseEnter={() => setActiveFeature(index)}
               className={classNames(styles.item, { [styles.active]: isActive })}
             >
-              <Text variant="heading4">{title}</Text>
-              <Text variant="text">{description}</Text>
+              <Text weight="semibold">{title}</Text>
+              <Text size={14} color="supporting">
+                {description}
+              </Text>
             </div>
           );
         })}

@@ -3,10 +3,11 @@ import styled, { css } from 'styled-components';
 import { defaultTransitionCSS } from 'lib/ui/animations/transitions';
 import { defaultInputShapeCSS, inputPaddingCSS } from './config';
 
-import { Props as InputWrapperProps, InputWrapperWithErrorMessage } from './InputWrapper';
+import { InputWrapperWithErrorMessageProps, InputWrapperWithErrorMessage } from './InputWrapper';
 import { Spinner } from '../Spinner';
+import { getColor } from '../theme/getters';
 
-export type SharedTextInputProps = Pick<InputWrapperProps, 'label' | 'error' | 'inputOverlay'> & {
+export type SharedTextInputProps = Pick<InputWrapperWithErrorMessageProps, 'label' | 'error' | 'inputOverlay'> & {
   onValueChange?: (value: string) => void;
   isLoading?: boolean;
 };
@@ -18,20 +19,20 @@ export const commonInputCSS = css<{
   max-width: 100%;
   width: 100%;
 
-  background: ${({ theme }) => theme.colors.backgroundGlass.toCssValue()};
+  background: ${getColor('mist')};
   ${inputPaddingCSS};
   color: ${({ theme }) => theme.colors.text.toCssValue()};
 
   ${defaultTransitionCSS};
 
   &::placeholder {
-    color: ${({ theme }) => theme.colors.textSupporting3.toCssValue()};
+    color: ${({ theme }) => theme.colors.textShy.toCssValue()};
   }
 
   outline: 1px solid transparent;
   ${({ isValid, theme }) => {
     const errorColor = theme.colors.alert.toCssValue();
-    const regularColor = isValid ? theme.colors.backgroundGlass.toCssValue() : errorColor;
+    const regularColor = isValid ? theme.colors.mist.toCssValue() : errorColor;
     const activeColor = isValid ? theme.colors.primary.toCssValue() : errorColor;
 
     return css`

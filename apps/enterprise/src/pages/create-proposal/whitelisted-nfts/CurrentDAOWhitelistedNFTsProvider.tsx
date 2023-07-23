@@ -1,7 +1,6 @@
-import { getValueProviderSetup } from '@terra-money/apps/utils';
-import { Throbber } from 'components/primitives';
-import { useCurrentDao } from 'dao/components/CurrentDaoProvider';
-import { useDAONFTsWhitelist } from 'queries/useDAONFTsWhitelist';
+import { getValueProviderSetup } from 'lib/shared/utils/getValueProviderSetup';
+import { Spinner } from 'lib/ui/Spinner';
+import { useCurrentDaoNftWhitelistQuery } from 'queries/useCurrentDaoNftWhitelistQuery';
 
 interface Props {
   children: React.ReactNode;
@@ -13,12 +12,10 @@ const { provider: WhitelistedNFTsProvider, useValue: useCurrentDaoWhitelistedNFT
 export { useCurrentDaoWhitelistedNFTs };
 
 export const CurrentDAOWhitelistedNFTsProvider = ({ children }: Props) => {
-  const dao = useCurrentDao();
-
-  const { data: whitelistedNFTs } = useDAONFTsWhitelist(dao.address);
+  const { data: whitelistedNFTs } = useCurrentDaoNftWhitelistQuery();
 
   if (!whitelistedNFTs) {
-    return <Throbber />;
+    return <Spinner />;
   }
 
   return <WhitelistedNFTsProvider value={whitelistedNFTs}>{children}</WhitelistedNFTsProvider>;

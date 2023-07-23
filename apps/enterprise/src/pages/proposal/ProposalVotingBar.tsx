@@ -1,20 +1,43 @@
-import { Container } from '@terra-money/apps/components/container';
-import { u } from '@terra-money/apps/types';
-import { getRatio, toPercents } from '@terra-money/apps/utils';
 import Big from 'big.js';
 import classNames from 'classnames';
-import { Text } from 'components/primitives';
+import { Text } from 'lib/ui/Text';
 import { enforceRange } from 'lib/shared/utils/enforceRange';
 import { HStack } from 'lib/ui/Stack';
 import { useTokenStakingAmountQuery } from 'queries';
 import { useMemo } from 'react';
 import { useCurrentProposal } from './CurrentProposalProvider';
 import styles from './ProposalVotingBar.module.sass';
+import { getRatio } from 'lib/shared/utils/getRatio';
+import { toPercents } from 'lib/shared/utils/toPercents';
+import styled, { useTheme } from 'styled-components';
+import { getColor } from 'lib/ui/theme/getters';
+import { Circle } from 'lib/ui/Circle';
+
+const Quorum = styled.div`
+  position: absolute;
+  top: -16px;
+  height: 12px;
+  width: 1px;
+  background: ${getColor('textShy')};
+`;
+
+const Center = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  p {
+    white-space: nowrap;
+    position: absolute;
+    top: -20px;
+  }
+`;
 
 export const ProposalVotingBar = () => {
   const { yesVotes, noVotes, abstainVotes, vetoVotes, totalVotes, status, dao, type } = useCurrentProposal();
 
-  const { data: totalStaked = Big(0) as u<Big> } = useTokenStakingAmountQuery(dao.address);
+  const { data: totalStaked = Big(0) as Big } = useTokenStakingAmountQuery(dao.address);
 
   const totalAvailableVotes = useMemo(() => {
     if (type === 'council') return totalVotes;
@@ -26,7 +49,7 @@ export const ProposalVotingBar = () => {
 
   const total = yesVotes.add(noVotes).add(abstainVotes).add(vetoVotes);
 
-  const quorum = Number(dao.governanceConfig.quorum);
+  const quorum = type === 'council' ? Number(dao.council?.quorum) : Number(dao.governanceConfig.quorum);
 
   const yesRatio = enforceRange(getRatio(yesVotes, total).toNumber(), 0, 1);
 
@@ -42,53 +65,63 @@ export const ProposalVotingBar = () => {
 
   const abstainBarWidth = toPercents(abstainRatio);
 
+  const { colors } = useTheme();
+
   return (
     <div className={styles.root}>
-      <div className={styles.bar}>
+      <div style={{ background: colors.mist.toCssValue() }} className={styles.bar}>
         <div style={{ width: totalBarWidth }} className={styles.total}>
-          <div style={{ width: yesBarWidth }} className={styles.yes}></div>
-          {noRatio > 0 && <div style={{ width: noBarWidth }} className={styles.no}></div>}
-          {abstainRatio > 0 && <div style={{ width: abstainBarWidth }} className={styles.abstain}></div>}
+          <div style={{ width: yesBarWidth, background: colors.success.toCssValue() }} className={styles.yes}></div>
+          {noRatio > 0 && (
+            <div style={{ width: noBarWidth, background: colors.alert.toCssValue() }} className={styles.no}></div>
+          )}
+          {abstainRatio > 0 && (
+            <div
+              style={{ width: abstainBarWidth, background: colors.textShy.toCssValue() }}
+              className={styles.abstain}
+            ></div>
+          )}
         </div>
-        <div style={{ left: toPercents(quorum) }} className={styles.quorum}>
-          <div className={styles.center}>
-            <Text className={classNames(styles.value, styles.label)} variant="text">
+        <Quorum style={{ left: toPercents(quorum) }}>
+          <Center>
+            <Text size={14} color="supporting">
               Quorum {toPercents(quorum)}
             </Text>
-          </div>
-        </div>
-        <Container gap={16} direction="row" className={styles.votesContainer}>
+          </Center>
+        </Quorum>
+        <HStack gap={16} className={styles.votesContainer}>
           {yesRatio > 0 && (
-            <Container gap={16} direction="row">
+            <HStack gap={16}>
               <HStack gap={8} alignItems="center">
-                <div className={styles.yesBean}></div>
-                <Text className={classNames(styles.value, styles.label)} variant="text">
+                <Circle size={8} background={colors.success} />
+                <Text className={classNames(styles.value, styles.label)} size={14} color="supporting">
                   Yes {toPercents(yesRatio, 'round')}
                 </Text>
               </HStack>
-            </Container>
+            </HStack>
           )}
           {noRatio > 0 && (
-            <Container gap={16} direction="row">
+            <HStack gap={16}>
               <HStack gap={8} alignItems="center">
-                <div className={styles.noBean}></div>
-                <Text className={classNames(styles.value, styles.label)} variant="text">
+                <Circle size={8} background={colors.alert} />
+                <Text className={classNames(styles.value, styles.label)} size={14} color="supporting">
                   No {toPercents(noRatio, 'round')}
                 </Text>
               </HStack>
-            </Container>
+            </HStack>
           )}
           {abstainRatio > 0 && (
-            <Container gap={16} direction="row">
+            <HStack gap={16}>
               <HStack gap={8} alignItems="center">
-                <div className={styles.abstainBean}></div>
-                <Text className={classNames(styles.value, styles.label)} variant="text">
+                <Circle size={8} background={colors.textShy} />
+
+                <Text className={classNames(styles.value, styles.label)} size={14} color="supporting">
                   Abstain {toPercents(abstainRatio, 'round')}
                 </Text>
               </HStack>
-            </Container>
+            </HStack>
           )}
-        </Container>
+        </HStack>
       </div>
     </div>
   );

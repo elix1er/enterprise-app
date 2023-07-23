@@ -1,10 +1,11 @@
-import { compareAddress } from '@terra-money/apps/utils';
 import { Proposal } from 'dao/shared/proposal';
 import { ApiEndpoints, Direction, useApiEndpoint } from 'hooks';
 import { useDAOsQuery } from 'queries';
 import { useQuery, UseQueryResult } from 'react-query';
 import { QUERY_KEY } from './queryKey';
 import { ProposalApiResponse, apiResponseToProposal } from 'proposal/ProposalApiResponse';
+import { reportError } from 'errors/errorMonitoring';
+import { areEqualAddresses } from 'chain/utils/areEqualAddresses';
 
 interface UseProposalsQueryOptions {
   daoAddress?: string;
@@ -24,22 +25,22 @@ export const useProposalsQuery = (
   const template: ApiEndpoints =
     daoAddress === undefined
       ? {
-        path: 'v1/proposals',
-        params: {
-          limit,
-          direction,
-        },
-      }
+          path: 'v1/proposals',
+          params: {
+            limit,
+            direction,
+          },
+        }
       : {
-        path: 'v1/daos/{address}/proposals',
-        route: {
-          address: daoAddress,
-        },
-        params: {
-          limit,
-          direction,
-        },
-      };
+          path: 'v1/daos/{address}/proposals',
+          route: {
+            address: daoAddress,
+          },
+          params: {
+            limit,
+            direction,
+          },
+        };
 
   const endpoint = useApiEndpoint(template);
 
@@ -59,7 +60,7 @@ export const useProposalsQuery = (
         const json: ProposalsQueryResponse = await response.json();
 
         json.forEach((entity) => {
-          const dao = daos.find((d) => compareAddress(d.address, entity.daoAddress));
+          const dao = daos.find((d) => areEqualAddresses(d.address, entity.daoAddress));
 
           if (dao === undefined) {
             reportError('Could not find the correct DAO for the proposal');

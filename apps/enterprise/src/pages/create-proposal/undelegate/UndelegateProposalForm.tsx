@@ -6,16 +6,17 @@ import { useDelegationsQuery } from 'chain/queries/useDelegationsQuery';
 import { useMemo, useState } from 'react';
 import { FixedOptionsInput } from 'lib/ui/inputs/Combobox/FixedOptionsInput';
 import * as z from 'zod';
-import { demicrofy } from '@terra-money/apps/libs/formatting';
-import { assertDefined } from '@terra-money/apps/utils';
+import { fromChainAmount } from 'chain/utils/fromChainAmount';
+import { assertDefined } from 'lib/shared/utils/assertDefined';
 import { lunaDecimals } from 'chain/constants';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AmountTextInput } from 'lib/ui/inputs/AmountTextInput';
 import { toUndelegateMsg } from './toUndelegateMsg';
+import { AmountSuggestion } from 'lib/ui/inputs/AmountSuggestion';
 
 interface UndelegateProposalFormSchema {
-  amount: number;
+  amount: number | undefined;
 }
 
 export const UndelegateProposalForm = () => {
@@ -28,8 +29,7 @@ export const UndelegateProposalForm = () => {
     if (!validator) return undefined;
 
     const delegation = assertDefined(delegations.find((d) => d.validator_address === validator));
-    console.log(delegation.balance.amount);
-    return demicrofy(delegation.balance.amount.toNumber(), lunaDecimals).toNumber();
+    return fromChainAmount(delegation.balance.amount.toNumber(), lunaDecimals);
   }, [delegations, validator]);
 
   const formSchema: z.ZodType<UndelegateProposalFormSchema> = z.object({
@@ -60,7 +60,7 @@ export const UndelegateProposalForm = () => {
               action_type: 'undelegate',
               msgs: [
                 toUndelegateMsg({
-                  amount,
+                  amount: assertDefined(amount),
                   address: assertDefined(validator),
                 }),
               ],
@@ -94,7 +94,7 @@ export const UndelegateProposalForm = () => {
               value={value}
               onBlur={onBlur}
               ref={ref}
-              max={maxAmount}
+              suggestion={maxAmount ? <AmountSuggestion name="Max" value={maxAmount} onSelect={onChange} /> : undefined}
             />
           )}
         />

@@ -1,18 +1,19 @@
 import { ProposalForm } from '../shared/ProposalForm';
 import * as z from 'zod';
 import { Controller, useForm } from 'react-hook-form';
-import { assertDefined } from '@terra-money/apps/utils';
+import { assertDefined } from 'lib/shared/utils/assertDefined';
 import { useCurrentDao } from 'dao/components/CurrentDaoProvider';
 import { toBurnTokensMsg } from './helpers/toBurnTokensMsg';
-import { demicrofy } from '@terra-money/apps/libs/formatting';
 import { Text } from 'lib/ui/Text';
 import { AmountTextInput } from 'lib/ui/inputs/AmountTextInput';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCurrentDaoTreasuryTokens } from '../spend/CurrentDAOTreasuryTokentsProvider';
 import Big from 'big.js';
+import { AmountSuggestion } from 'lib/ui/inputs/AmountSuggestion';
+import { fromChainAmount } from 'chain/utils/fromChainAmount';
 
 interface MintTokensProposalFormSchema {
-  amount: number;
+  amount: number | undefined;
 }
 
 export const BurnTokensProposalForm = () => {
@@ -25,7 +26,7 @@ export const BurnTokensProposalForm = () => {
       .number()
       .positive()
       .gt(0)
-      .max(token ? demicrofy(token.balance, token.decimals).toNumber() : 0),
+      .max(token ? fromChainAmount(token.balance, token.decimals) : 0),
   });
 
   const {
@@ -49,7 +50,7 @@ export const BurnTokensProposalForm = () => {
               action_type: 'burn',
               msgs: [
                 toBurnTokensMsg({
-                  amount,
+                  amount: assertDefined(amount),
                   tokenDecimals: decimals,
                   tokenAddress: dao.dao_membership_contract,
                 }),
@@ -63,9 +64,8 @@ export const BurnTokensProposalForm = () => {
         <Controller
           control={control}
           name="amount"
-          render={({ field: { onChange, onBlur, value, name, ref } }) => (
+          render={({ field: { onChange, onBlur, value, ref } }) => (
             <AmountTextInput
-              type="number"
               error={errors.amount?.message}
               label="Amount"
               placeholder="Enter an amount"
@@ -73,7 +73,13 @@ export const BurnTokensProposalForm = () => {
               value={value}
               onBlur={onBlur}
               ref={ref}
-              max={demicrofy(token.balance, token.decimals).toNumber()}
+              suggestion={
+                <AmountSuggestion
+                  name="Max"
+                  value={fromChainAmount(token.balance, token.decimals)}
+                  onSelect={onChange}
+                />
+              }
             />
           )}
         />

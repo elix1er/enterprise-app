@@ -1,6 +1,6 @@
-import { getValueProviderSetup } from '@terra-money/apps/utils';
-import { Throbber } from 'components/primitives';
 import { useMinimumEligibleWeightQuery } from 'dao/hooks/useMinimumEligibleWeightQuery';
+import { getValueProviderSetup } from 'lib/shared/utils/getValueProviderSetup';
+import { Spinner } from 'lib/ui/Spinner';
 
 interface Props {
   children: React.ReactNode;
@@ -15,10 +15,8 @@ export const CurrentDAOMinimumWeightForRewardsProvider = ({ children }: Props) =
   const { data: minWeight } = useMinimumEligibleWeightQuery();
 
   if (minWeight === undefined) {
-    return <Throbber />;
+    return <Spinner />;
   }
-
-  console.log('min weight: ', minWeight);
 
   return <MinimumWeightForRewardsProvider value={minWeight}>{children}</MinimumWeightForRewardsProvider>;
 };

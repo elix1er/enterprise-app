@@ -1,19 +1,20 @@
-import { Container } from '@terra-money/apps/components';
+import { Stack } from 'lib/ui/Stack';
 import { WizardStep } from '../WizardStep';
 import { useDaoWizardForm } from '../DaoWizardFormProvider';
-import { OptionButton } from 'components/option-button';
-import { ConditionalRender, Divider } from 'components/primitives';
 import { enterprise } from 'types/contracts';
-import { TokenAddressInput } from '../token/TokenAddressInput';
-import { NftAddressInput } from '../nft/NftAddressInput';
-import { MultisigAddressInput } from '../multisig/MultisigAddressInput';
 import { CW20TokenInfoResponse, CW721ContractInfoResponse, MultisigVoter } from 'queries';
-import { Text } from 'components/primitives';
-import { Address } from 'components/address';
-import { demicrofy, formatAmount } from '@terra-money/apps/libs/formatting';
+import { Text } from 'lib/ui/Text';
+import { fromChainAmount } from 'chain/utils/fromChainAmount';
+import { formatAmount } from 'lib/shared/utils/formatAmount';
 import Big from 'big.js';
-import { u } from '@terra-money/apps/types';
-import styles from './ImportStep.module.sass';
+import { Address } from 'chain/components/Address';
+import { PrimarySelect } from 'lib/ui/inputs/PrimarySelect';
+import { booleanMatch } from 'lib/shared/utils/match';
+import { SeparatedByLine } from 'lib/ui/SeparatedByLine';
+import { Match } from 'lib/ui/Match';
+import { TokenAddressInput } from '../token/TokenAddressInput';
+import { MultisigAddressInput } from '../multisig/MultisigAddressInput';
+import { NftAddressInput } from '../nft/NftAddressInput';
 
 const daoNameRecord: Record<enterprise.DaoType, string> = {
   multisig: 'Multisig',
@@ -23,42 +24,60 @@ const daoNameRecord: Record<enterprise.DaoType, string> = {
 
 const CW20TokenInformation = ({ tokenAddr, token }: { tokenAddr: string; token: CW20TokenInfoResponse }) => {
   return (
-    <Container className={styles.tokenInformation} direction="column">
-      <Text variant="label">Name</Text>
-      <Text variant="heading4">{token.name}</Text>
-      <Text variant="label">Symbol</Text>
-      <Text variant="heading4">{token.symbol}</Text>
-      <Text variant="label">CW20 Address</Text>
-      <Address address={tokenAddr} truncation={[20, 20]} textProps={{ variant: 'heading4' }} />
-      <Text variant="label">Total supply</Text>
-      <Text variant="heading4">
-        {formatAmount(demicrofy(Big(token.total_supply) as u<Big>, token.decimals), { decimals: 2 })}
+    <Stack gap={8} direction="column">
+      <Text size={14} color="supporting">
+        Name
       </Text>
-    </Container>
+      <Text weight="semibold">{token.name}</Text>
+      <Text size={14} color="supporting">
+        Symbol
+      </Text>
+      <Text weight="semibold">{token.symbol}</Text>
+      <Text size={14} color="supporting">
+        CW20 Address
+      </Text>
+      <Address value={tokenAddr} length="l" />
+      <Text size={14} color="supporting">
+        Total supply
+      </Text>
+      <Text weight="semibold">
+        {formatAmount(fromChainAmount(Big(token.total_supply).toNumber(), token.decimals), { decimals: 2 })}
+      </Text>
+    </Stack>
   );
 };
 
 const NFTTokenInformation = ({ tokenAddr, token }: { tokenAddr: string; token: CW721ContractInfoResponse }) => {
   return (
-    <Container className={styles.tokenInformation} direction="column">
-      <Text variant="label">Name</Text>
-      <Text variant="heading4">{token.name}</Text>
-      <Text variant="label">Symbol</Text>
-      <Text variant="heading4">{token.symbol}</Text>
-      <Text variant="label">CW721 Address</Text>
-      <Address address={tokenAddr} truncation={[20, 20]} textProps={{ variant: 'heading4' }} />
-    </Container>
+    <Stack gap={8} direction="column">
+      <Text size={14} color="supporting">
+        Name
+      </Text>
+      <Text weight="semibold">{token.name}</Text>
+      <Text size={14} color="supporting">
+        Symbol
+      </Text>
+      <Text weight="semibold">{token.symbol}</Text>
+      <Text size={14} color="supporting">
+        CW721 Address
+      </Text>
+      <Address value={tokenAddr} length="l" />
+    </Stack>
   );
 };
 
 const MultisigVotersInformation = ({ multisigAddr, voters }: { multisigAddr: string; voters: MultisigVoter[] }) => {
   return (
-    <Container className={styles.tokenInformation} direction="column">
-      <Text variant="label">Number of members</Text>
-      <Text variant="heading4">{voters.length}</Text>
-      <Text variant="label">CW3 Address</Text>
-      <Address address={multisigAddr} truncation={[20, 20]} textProps={{ variant: 'heading4' }} />
-    </Container>
+    <Stack gap={8} direction="column">
+      <Text size={14} color="supporting">
+        Number of members
+      </Text>
+      <Text weight="semibold">{voters.length}</Text>
+      <Text size={14} color="supporting">
+        CW3 Address
+      </Text>
+      <Address value={multisigAddr} length="l" />
+    </Stack>
   );
 };
 
@@ -82,7 +101,7 @@ export function ImportStep() {
   const daoName = daoNameRecord[type];
 
   const helpContent = shouldImport && (
-    <Container className={styles.helpContent}>
+    <Stack direction="row">
       {type === 'token' && existingToken && (
         <CW20TokenInformation tokenAddr={existingTokenAddr} token={existingToken} />
       )}
@@ -90,36 +109,32 @@ export function ImportStep() {
       {type === 'multisig' && existingMultisigVoters && (
         <MultisigVotersInformation multisigAddr={existingMultisigAddr} voters={existingMultisigVoters} />
       )}
-    </Container>
+    </Stack>
   );
-
   return (
     <WizardStep title={`Do you have an existing ${daoName}?`} helpContent={helpContent}>
-      <Container direction="column" gap={24}>
-        <Container gap={24} direction="column">
-          <OptionButton
-            title={`No, create a new ${daoName}`}
-            active={!shouldImport}
-            onClick={() => formInput({ daoImport: { ...daoImport, shouldImport: false } })}
+      <SeparatedByLine gap={24}>
+        <PrimarySelect<boolean>
+          options={[false, true]}
+          getName={(option) =>
+            booleanMatch(option, {
+              false: () => `No, create a new ${daoName}`,
+              true: () => `Yes, find my ${daoName}`,
+            })
+          }
+          selectedOption={shouldImport}
+          onSelect={(shouldImport) => formInput({ daoImport: { ...daoImport, shouldImport } })}
+          groupName="proposal-type"
+        />
+        {shouldImport && (
+          <Match
+            value={type}
+            token={() => <TokenAddressInput />}
+            multisig={() => <MultisigAddressInput />}
+            nft={() => <NftAddressInput />}
           />
-          <OptionButton
-            title={`Yes, find my ${daoName}`}
-            active={shouldImport}
-            onClick={() => formInput({ daoImport: { ...daoImport, shouldImport: true } })}
-          />
-          {shouldImport && (
-            <>
-              <Divider />
-              <ConditionalRender
-                value={type}
-                token={() => <TokenAddressInput />}
-                multisig={() => <MultisigAddressInput />}
-                nft={() => <NftAddressInput />}
-              />
-            </>
-          )}
-        </Container>
-      </Container>
+        )}
+      </SeparatedByLine>
     </WizardStep>
   );
 }
