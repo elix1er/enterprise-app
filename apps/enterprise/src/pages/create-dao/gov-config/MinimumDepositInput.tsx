@@ -1,5 +1,5 @@
-import { FormControl } from 'components/form-control';
-import { FormTextInput } from 'components/form-text-input';
+import { WithHint } from 'lib/ui/WithHint';
+import { AmountTextInput } from 'lib/ui/inputs/AmountTextInput';
 
 export interface MinimumDepositInputProps {
   value: number | undefined;
@@ -9,29 +9,12 @@ export interface MinimumDepositInputProps {
 
 export const MinimumDepositInput = ({ value, onChange, error }: MinimumDepositInputProps) => {
   return (
-    <FormControl
-      label="Minimum deposit"
-      helpText="Minimum amount of DAO's governance unit to be required to create a deposit"
-    >
-      <FormTextInput
-        value={value === undefined ? '' : value}
-        type="number"
-        placeholder="Enter minimum deposit"
-        error={error}
-        onChange={({ currentTarget }) => {
-          if (currentTarget.value === '') {
-            onChange(undefined);
-            return;
-          }
-
-          const newValue = Number(currentTarget.value);
-          if (isNaN(newValue) || newValue < 0) {
-            return;
-          }
-
-          onChange(newValue);
-        }}
-      />
-    </FormControl>
+    <AmountTextInput
+      label={<WithHint hint="The minimum deposit amount required to create a proposal.">Minimum deposit</WithHint>}
+      value={value}
+      placeholder="Enter a minimum deposit amount"
+      error={error}
+      onValueChange={onChange}
+    />
   );
 };

@@ -1,5 +1,6 @@
-import { FormState } from '@terra-money/apps/hooks';
-import { validateAddress, validateAmount } from '@terra-money/apps/utils';
+import { validateAddress } from 'chain/utils/validators';
+import { FormState } from 'lib/shared/hooks/useForm';
+import { validateAmount } from 'lib/shared/utils/validateAmount';
 import { CouncilInput } from 'pages/create-dao/DaoWizardFormProvider';
 
 export const validateCouncil = ({
@@ -16,7 +17,7 @@ export const validateCouncil = ({
   }));
 
   if (allowedProposalTypes.length < 1) {
-    formState.allowedProposalTypesError = 'At least one proposal type must be selected';
+    formState.allowedProposalTypesError = 'Select at least one proposal type';
   }
 
   formState.thresholdError = validateAmount(Math.round(threshold * 100), 50, 100, 'Threshold');

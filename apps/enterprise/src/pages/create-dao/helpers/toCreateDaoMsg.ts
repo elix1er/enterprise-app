@@ -1,8 +1,8 @@
 import { CreateDaoMsgType } from 'tx/useCreateDaoTx';
-import { microfy } from '@terra-money/apps/libs/formatting';
+import { toChainAmount } from 'chain/utils/toChainAmount';
 import { DaoWizardInput, DaoWizardState } from '../DaoWizardFormProvider';
 import { enterprise_factory } from 'types/contracts';
-import { assertDefined } from '@terra-money/apps/utils';
+import { assertDefined } from 'lib/shared/utils/assertDefined';
 
 const getDaoMembership = (input: DaoWizardInput) => {
   const {
@@ -20,10 +20,10 @@ const getDaoMembership = (input: DaoWizardInput) => {
       type === 'token'
         ? input.existingTokenAddr
         : type === 'nft'
-          ? input.existingNFTAddr
-          : type === 'multisig'
-            ? input.existingMultisigAddr
-            : undefined;
+        ? input.existingNFTAddr
+        : type === 'multisig'
+        ? input.existingMultisigAddr
+        : undefined;
 
     return {
       existing_membership: {
@@ -55,9 +55,9 @@ const getDaoMembership = (input: DaoWizardInput) => {
         new_token: {
           initial_token_balances: initialBalances.map(({ address, amount }) => ({
             address,
-            amount: microfy(amount, decimals).toString(),
+            amount: toChainAmount(amount, decimals),
           })),
-          initial_dao_balance: initialDaoBalance ? microfy(initialDaoBalance, decimals).toString() : null,
+          initial_dao_balance: initialDaoBalance ? toChainAmount(initialDaoBalance, decimals).toString() : null,
           token_decimals: decimals,
           token_marketing: {
             description,
@@ -77,7 +77,7 @@ const getDaoMembership = (input: DaoWizardInput) => {
 
 export const getDaoRatio = (ratio: number) => ratio.toFixed(2);
 
-const getDaoGovConfig = ({ govConfig, type, timeConversionFactor }: DaoWizardState) => {
+const getDaoGovConfig = ({ govConfig, type, timeConversionFactor, tokenInfo }: DaoWizardState) => {
   const config: enterprise_factory.DaoGovConfig = {
     quorum: getDaoRatio(govConfig.quorum),
     threshold: getDaoRatio(govConfig.threshold),
@@ -91,7 +91,7 @@ const getDaoGovConfig = ({ govConfig, type, timeConversionFactor }: DaoWizardSta
   };
 
   if (type === 'token') {
-    config.minimum_deposit = microfy(govConfig.minimumDeposit || 0).toString();
+    config.minimum_deposit = toChainAmount(govConfig.minimumDeposit || 0, tokenInfo.decimals);
   }
 
   return config;
@@ -103,11 +103,11 @@ const getMinimumWeightForRewards = ({ govConfig, type, tokenInfo }: DaoWizardSta
   if (minimumWeightForRewards === undefined) return undefined;
 
   if (type === 'token') {
-    return microfy(minimumWeightForRewards, tokenInfo.decimals).toString();
+    return toChainAmount(minimumWeightForRewards, tokenInfo.decimals);
   }
 
-  return minimumWeightForRewards.toString()
-}
+  return minimumWeightForRewards.toString();
+};
 
 export const toCreateDaoMsg = (input: DaoWizardState): CreateDaoMsgType => {
   const {
@@ -122,11 +122,11 @@ export const toCreateDaoMsg = (input: DaoWizardState): CreateDaoMsgType => {
       dao_council:
         council && council.members.length > 0
           ? {
-            members: council.members.map((member) => member.address),
-            allowed_proposal_action_types: council.allowedProposalTypes,
-            quorum: getDaoRatio(council.quorum),
-            threshold: getDaoRatio(council.threshold),
-          }
+              members: council.members.map((member) => member.address),
+              allowed_proposal_action_types: council.allowedProposalTypes,
+              quorum: getDaoRatio(council.quorum),
+              threshold: getDaoRatio(council.threshold),
+            }
           : null,
       dao_membership: getDaoMembership(input),
       dao_metadata: {

@@ -1,17 +1,21 @@
-import { FailedTransaction, Transaction, TransactionStatus } from '@terra-money/apps/libs/transactions';
-import { ReactComponent as CheckIcon } from 'components/assets/Check.svg';
-import { ReactComponent as ErrorIcon } from 'components/assets/Error.svg';
-import { ReactComponent as TimerIcon } from 'components/assets/Timer.svg';
-import { ReactComponent as CloseIcon } from 'components/assets/Close.svg';
-import { Text } from 'components/primitives/text';
+import { Transaction, TransactionStatus } from 'chain/transactions';
 import { useSnackbar } from 'notistack';
 import { useSnackbarKey } from './SnackbarContainer';
-import { useConnectedWallet, UserDenied } from '@terra-money/wallet-provider';
-import { useCallback } from 'react';
-import { LinearProgress } from '@mui/material';
-import { getFinderUrl } from '@terra-money/apps/utils';
-import styles from './TransactionSnackbar.module.sass';
+import { useMemo } from 'react';
 import { useTransactionError } from 'chain/components/TransactionErrorProvider';
+import { useNetworkName } from 'chain/hooks/useNetworkName';
+import { useMyAddress } from 'chain/hooks/useMyAddress';
+import { ExternalLink } from 'components/link';
+import { Text } from 'lib/ui/Text';
+import { ShyTextButton } from 'lib/ui/buttons/ShyTextButton';
+import { HStack, VStack } from 'lib/ui/Stack';
+import { PopoverContainer } from 'lib/ui/Menu/PopoverPanel';
+import { CheckIcon } from 'lib/ui/icons/CheckIcon';
+import { AlertCircleIcon } from 'lib/ui/icons/AlertCircleIcon';
+import { Spinner } from 'lib/ui/Spinner';
+import { Match } from 'lib/ui/Match';
+import { getFinderUrl } from 'chain/utils/getFinderUrl';
+import { CloseButton } from 'lib/ui/buttons/CloseButton';
 
 type Variant = 'pending' | 'completed' | 'failed';
 
@@ -22,14 +26,6 @@ interface TransactionSnackbarProps {
   timeout?: number;
 }
 
-const getErrorText = (error: FailedTransaction['error']) => {
-  if (error instanceof UserDenied) {
-    return error.message;
-  }
-
-  return 'View error details';
-};
-
 export const TransactionSnackbar = (props: TransactionSnackbarProps) => {
   const { transaction, variant, message } = props;
 
@@ -37,12 +33,14 @@ export const TransactionSnackbar = (props: TransactionSnackbarProps) => {
 
   const snackbarKey = useSnackbarKey();
 
-  const connectedWallet = useConnectedWallet();
+  const myAddress = useMyAddress();
 
   const { showDetails: showTransactionErrorDetails } = useTransactionError();
 
-  const onDetailsClick = useCallback(() => {
-    if (!connectedWallet) {
+  const networkName = useNetworkName();
+
+  const detailsUrl = useMemo(() => {
+    if (!myAddress) {
       return;
     }
 
@@ -51,30 +49,34 @@ export const TransactionSnackbar = (props: TransactionSnackbarProps) => {
       return;
     }
 
-    window.open(getFinderUrl(connectedWallet.network.name, transaction.txHash));
-  }, [connectedWallet, showTransactionErrorDetails, transaction]);
+    return getFinderUrl(networkName, transaction.txHash);
+  }, [myAddress, networkName, showTransactionErrorDetails, transaction]);
 
   return (
-    <div className={styles.root} data-variant={variant}>
-      {variant === 'pending' && <LinearProgress className={styles.progress} color="inherit" />}
-      {variant === 'completed' && <CheckIcon className={styles.icon} />}
-      {variant === 'failed' && <ErrorIcon className={styles.icon} />}
-      {variant === 'pending' && <TimerIcon className={styles.icon} />}
-      <Text className={styles.text} variant="heading4">
-        {message}
-      </Text>
-      {transaction.txHash?.length > 0 ? (
-        <Text className={styles.link} variant="link" onClick={onDetailsClick}>
-          View details
+    <PopoverContainer>
+      <HStack gap={20} style={{ minWidth: 300 }} alignItems="center">
+        <Text as="div" size={20}>
+          <Match
+            value={variant}
+            completed={() => <CheckIcon />}
+            failed={() => <AlertCircleIcon />}
+            pending={() => <Spinner />}
+          />
         </Text>
-      ) : (
-        <Text className={styles.link} variant="link" onClick={onDetailsClick}>
-          {transaction.status === TransactionStatus.Failed && transaction.error
-            ? getErrorText(transaction.error)
-            : 'View details'}
-        </Text>
-      )}
-      {variant !== 'pending' && <CloseIcon className={styles.close} onClick={() => closeSnackbar(snackbarKey)} />}
-    </div>
+        <VStack gap={4}>
+          <Text weight="semibold" color="regular">
+            {message}
+          </Text>
+          {detailsUrl ? (
+            <ExternalLink to={detailsUrl}>
+              <ShyTextButton as="div" text="View details" />
+            </ExternalLink>
+          ) : transaction.status === TransactionStatus.Failed && transaction.error ? (
+            <Text cropped>{transaction.error.message}</Text>
+          ) : null}
+        </VStack>
+        {variant !== 'pending' && <CloseButton onClick={() => closeSnackbar(snackbarKey)} />}
+      </HStack>
+    </PopoverContainer>
   );
 };

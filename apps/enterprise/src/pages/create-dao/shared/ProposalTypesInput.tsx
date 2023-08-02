@@ -11,7 +11,7 @@ export const councilProposalActionTypes = [
   'upgrade_dao',
 ] as const;
 
-export type CouncilProposalActionType = typeof councilProposalActionTypes[number];
+export type CouncilProposalActionType = (typeof councilProposalActionTypes)[number];
 
 export const councilProposalActionTypeName: Record<CouncilProposalActionType, string> = {
   update_metadata: 'Update metadata',
@@ -44,7 +44,7 @@ export const ProposalTypesInput = forwardRef(function InnerCollectionsInput(
     <VStack>
       <FixedOptionsInput
         label={label}
-        placeholder="Select proposal type"
+        placeholder="select a proposal type"
         value={null}
         ref={ref}
         onChange={(value) => {

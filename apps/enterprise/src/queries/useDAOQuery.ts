@@ -1,4 +1,3 @@
-import { CW20Addr } from '@terra-money/apps/types';
 import { useQuery } from 'react-query';
 import { QUERY_KEY } from './queryKey';
 import { useContract } from 'chain/hooks/useContract';
@@ -7,7 +6,7 @@ import { DaoInfo } from 'dao';
 
 type DaoQueryArguments = Extract<enterprise.QueryMsg, { dao_info: {} }>;
 
-export const useDAOQuery = (address: CW20Addr) => {
+export const useDAOQuery = (address: string) => {
   const { query } = useContract();
 
   return useQuery(
@@ -20,9 +19,9 @@ export const useDAOQuery = (address: CW20Addr) => {
       const daoInfo: DaoInfo = {
         ...response,
         address,
-      }
+      };
 
-      return daoInfo
+      return daoInfo;
     },
     {
       refetchOnMount: false,

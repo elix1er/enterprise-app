@@ -1,12 +1,11 @@
-import { Container } from '@terra-money/apps/components';
-import classNames from 'classnames';
+import { HStack, VStack } from 'lib/ui/Stack';
 import { DAOLogo } from 'components/dao-logo';
-import { Text } from 'components/primitives';
 import { useCurrentDao } from 'dao/components/CurrentDaoProvider';
-import { forwardRef, Ref } from 'react';
-import { useNavigate } from 'react-router';
-import styles from './Header.module.sass';
 import { getDaoLogo } from 'dao/utils/getDaoLogo';
+import { InternalLink } from 'lib/navigation/Link/InternalLink';
+import { getDaoPath } from 'navigation/Path';
+import { ShyLinkText } from 'lib/ui/Text/ShyLinkText';
+import { Text } from 'lib/ui/Text';
 
 interface HeaderProps {
   className?: string;
@@ -14,38 +13,21 @@ interface HeaderProps {
   title: string;
 }
 
-export const Header = forwardRef((props: HeaderProps, ref: Ref<HTMLDivElement>) => {
+export const Header = (props: HeaderProps) => {
   const dao = useCurrentDao();
-  const { className, compact = false, title } = props;
-
-  const navigate = useNavigate();
-
-  if (compact) {
-    return (
-      <Container ref={ref} className={classNames(className, styles.root, styles.compact)}>
-        <div className={styles.logo}>
-          <DAOLogo size="s" logo={getDaoLogo(dao)} />
-        </div>
-        <Text className={styles.name} variant="heading2">
-          {title}
-        </Text>
-      </Container>
-    );
-  }
+  const { title } = props;
 
   return (
-    <Container className={classNames(className, styles.root)} direction="column">
-      <Container ref={ref} className={styles.container}>
-        <Text className={styles.back} variant="link" onClick={() => navigate(-1)}>
-          Back
-        </Text>
-        <div className={styles.logo}>
-          <DAOLogo size="s" logo={getDaoLogo(dao)} />
-        </div>
-        <Text className={styles.name} variant="heading2">
-          {title}
-        </Text>
-      </Container>
-    </Container>
+    <VStack gap={16}>
+      <InternalLink to={getDaoPath(dao.address)}>
+        <ShyLinkText>Back</ShyLinkText>
+      </InternalLink>
+      <HStack alignItems="center" gap={8}>
+        <InternalLink to={getDaoPath(dao.address)}>
+          <DAOLogo size="m" logo={getDaoLogo(dao)} />
+        </InternalLink>
+        <Text as="h1">{title}</Text>
+      </HStack>
+    </VStack>
   );
-});
+};

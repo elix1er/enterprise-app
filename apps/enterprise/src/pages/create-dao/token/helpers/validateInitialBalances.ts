@@ -1,5 +1,6 @@
-import { FormState } from '@terra-money/apps/hooks';
-import { validateAddress, validateAmount } from '@terra-money/apps/utils';
+import { validateAddress } from 'chain/utils/validators';
+import { FormState } from 'lib/shared/hooks/useForm';
+import { validateAmount } from 'lib/shared/utils/validateAmount';
 import { InitialBalance } from 'pages/create-dao/DaoWizardFormProvider';
 
 export const UINT_128_MAX = 340282366920938463463374607431768211455;
@@ -9,13 +10,12 @@ export const validateInitialBalances = (initialBalances: InitialBalance[]): Form
     const formState: FormState<InitialBalance> = { address, amount };
 
     if (!address) {
-      formState.addressError = 'Address is required';
+      formState.addressError = 'Enter a Terra address';
     } else if (validateAddress(address)) {
       formState.addressError = 'Invalid Terra address';
     }
 
-    formState.amountError =
-      amount?.length === 0 ? 'The amount is required' : validateAmount(Number(amount), 1, UINT_128_MAX, 'Amount');
+    formState.amountError = !amount ? 'Enter an amount' : validateAmount(amount, 1, UINT_128_MAX, 'Amount');
 
     return formState;
   });

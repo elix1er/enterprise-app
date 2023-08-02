@@ -8,6 +8,7 @@ interface MyNftIdsParams {
   tokens: {
     owner: string;
     start_after?: string;
+    limit: number;
   };
 }
 
@@ -21,21 +22,25 @@ export const useMyNftsQuery = (collectionAddr: string) => {
   const { query } = useContract();
 
   const queryNftInfo = useQueryNftInfo();
-
   const address = useAssertMyAddress();
 
   const fetchNftIds = async (startAfter?: string): Promise<string[]> => {
-    const { ids, tokens } = await query<MyNftIdsParams, MyNftIdsResponse>(collectionAddr, {
-      tokens: { owner: address, start_after: startAfter },
-    });
+    let allIds: string[] = [];
 
-    if (!tokens || tokens.length === 0) {
-      return ids || [];
-    }
+    do {
+      const { tokens } = await query<MyNftIdsParams, MyNftIdsResponse>(collectionAddr, {
+        tokens: { owner: address, start_after: startAfter, limit: 30 },
+      });
 
-    const lastId = tokens[tokens.length - 1];
-    const nextIds = await fetchNftIds(lastId);
-    return [...(ids || []), ...nextIds];
+      if (tokens && tokens.length > 0) {
+        allIds = [...allIds, ...tokens];
+        startAfter = tokens[tokens.length - 1];
+      } else {
+        startAfter = undefined;
+      }
+    } while (startAfter);
+
+    return allIds;
   };
 
   return useQuery([QUERY_KEY.MY_NFTS, collectionAddr], async () => {
@@ -44,4 +49,3 @@ export const useMyNftsQuery = (collectionAddr: string) => {
     return Promise.all(allIds.map((token) => queryNftInfo(collectionAddr, token)));
   });
 };
-

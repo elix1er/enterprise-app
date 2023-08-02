@@ -1,8 +1,10 @@
-import { useTx, TxBuilder } from '@terra-money/apps/libs/transactions';
+import { useTx, TxBuilder } from 'chain/transactions';
 import { Proposal } from 'dao/shared/proposal';
 import { enterprise } from 'types/contracts';
 import { TX_KEY } from './txKey';
-// import { useTxOverrides } from './useFeeOverrides';
+import { useMyAddress } from 'chain/hooks/useMyAddress';
+import { assertDefined } from 'lib/shared/utils/assertDefined';
+import { useChainID } from 'chain/hooks/useChainID';
 
 interface ExecuteProposalTxOptions {
   daoAddress: string;
@@ -13,21 +15,24 @@ export const getExecuteProposalMsg = ({ id }: Pick<Proposal, 'id'>) => ({
   execute_proposal: {
     proposal_id: id,
   },
-})
+});
 
 export const useExecuteProposalTx = () => {
+  const myAddress = useMyAddress();
+  const chainID = useChainID();
+
   return useTx<ExecuteProposalTxOptions>(
     (options) => {
-      const { daoAddress, proposalId, wallet } = options;
-      const tx = TxBuilder.new()
-        .execute<enterprise.ExecuteMsg>(
-          wallet.walletAddress,
-          daoAddress,
-          getExecuteProposalMsg({ id: proposalId })
-        )
+      const { daoAddress, proposalId } = options;
+
+      const payload = TxBuilder.new()
+        .execute<enterprise.ExecuteMsg>(assertDefined(myAddress), daoAddress, getExecuteProposalMsg({ id: proposalId }))
         .build();
 
-      return tx
+      return {
+        ...payload,
+        chainID,
+      };
     },
     {
       txKey: TX_KEY.EXECUTE_PROPOSAL,

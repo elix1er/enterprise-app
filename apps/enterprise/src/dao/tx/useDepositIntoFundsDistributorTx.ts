@@ -1,10 +1,11 @@
-import { useTx } from '@terra-money/apps/libs/transactions';
-import { MsgExecuteContract } from '@terra-money/terra.js';
+import { useTx } from 'chain/transactions';
+import { MsgExecuteContract } from '@terra-money/feather.js';
 import { useAssertMyAddress } from 'chain/hooks/useAssertMyAddress';
 import { TX_KEY } from 'tx';
-import { isDenom, toAmount } from "@terra.kitchen/utils"
+import { isDenom, toAmount } from '@terra.kitchen/utils';
 import { funds_distributor } from 'types/contracts';
-import { hookMsg } from '@terra-money/apps/libs/transactions/utils/hookMsg';
+import { hookMsg } from 'chain/transactions/utils/hookMsg';
+import { useChainID } from 'chain/hooks/useChainID';
 
 interface DepositTxParams {
   address: string;
@@ -19,39 +20,40 @@ interface SendCW20Msg {
     contract: string;
     amount: string;
     msg: string;
-  }
+  };
 }
 
 const getMsg = ({ address, amount, decimals, denom, walletAddress }: DepositTxParams & { walletAddress: string }) => {
   if (isDenom(denom)) {
     const msg: funds_distributor.ExecuteMsg = {
-      distribute_native: {
-      }
-    }
-    return new MsgExecuteContract(walletAddress, address, msg, { [denom]: toAmount(amount, { decimals }) })
+      distribute_native: {},
+    };
+    return new MsgExecuteContract(walletAddress, address, msg, { [denom]: toAmount(amount, { decimals }) });
   }
 
   const fundsDistributorHookMsg: funds_distributor.Cw20HookMsg = {
-    distribute: {}
-  }
+    distribute: {},
+  };
   const msg: SendCW20Msg = {
     send: {
       contract: address,
       amount: toAmount(amount, { decimals }),
-      msg: hookMsg(fundsDistributorHookMsg)
-    }
-  }
+      msg: hookMsg(fundsDistributorHookMsg),
+    },
+  };
 
-  return new MsgExecuteContract(walletAddress, denom, msg)
-}
+  return new MsgExecuteContract(walletAddress, denom, msg);
+};
 
 export const useDepositIntoFundsDistributorTx = () => {
   const walletAddress = useAssertMyAddress();
+  const chainID = useChainID();
 
   return useTx<DepositTxParams>(
     (params) => {
       return {
-        msgs: [getMsg({ ...params, walletAddress })]
+        chainID,
+        msgs: [getMsg({ ...params, walletAddress })],
       };
     },
     {

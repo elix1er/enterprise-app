@@ -12,11 +12,14 @@ on:
     paths:
       - indexers/enterprise/src/**
       - indexers/shared/src/**
+      - indexers/enterprise-stats/src/**
       - apps/enterprise-api/src/**
       - apps/shared-api/src/**
       - indexers/enterprise/Dockerfile
+      - indexers/enterprise-stats/Dockerfile
       - apps/enterprise-api/Dockerfile
       - .github/workflows/enterprise-api.yml
+      - refs.json
 
   pull_request:
     branches:
@@ -26,11 +29,13 @@ on:
 
     paths:
       - indexers/enterprise/src/**
+      - indexers/enterprise-stats/src/**
       - apps/enterprise-api/src/**
       - indexers/enterprise/Dockerfile
+      - indexers/enterprise-stats/Dockerfile
       - apps/enterprise-api/Dockerfile
       - .github/workflows/enterprise-api.yml
-
+      - refs.json
 env:
   AWS_REGION: "ap-northeast-2"
   AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY }}"
@@ -42,9 +47,36 @@ env:
   API_DOCKERFILE: "apps/enterprise-api/Dockerfile"
   API_CONTEXT_PATH: "."
   API_ECR_REPO: "enterprise-api"
+  STATS_DOCKERFILE: "indexers/enterprise-stats/Dockerfile"
+  STATS_CONTEXT_PATH: "."
+  STATS_ECR_REPO: "enterprise-stats"
   TERRAFORM_REPO: "terra-money/tf-apps-enterprise"
 
 jobs:
+  refs-parsing:
+    runs-on: ubuntu-latest
+    outputs:
+      testnet_enterprise_factory_address: ${{ steps.parse-refs.outputs.testnet_enterprise_factory_address }}
+      mainnet_enterprise_factory_address: ${{ steps.parse-refs.outputs.mainnet_enterprise_factory_address }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Parse refs.json
+        id: parse-refs
+        run: |
+          # Install jq to parse JSON
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+          # Parse refs.json and extract the required information
+          TESTNET_ENTERPRISE_FACTORY_ADDRESS=$(jq -r '.testnet["enterprise-factory"].address' refs.json)
+          MAINNET_ENTERPRISE_FACTORY_ADDRESS=$(jq -r '.mainnet["enterprise-factory"].address' refs.json)
+
+          # Set output parameters for subsequent jobs
+          echo "::set-output name=testnet_enterprise_factory_address::$TESTNET_ENTERPRISE_FACTORY_ADDRESS"
+          echo "::set-output name=mainnet_enterprise_factory_address::$MAINNET_ENTERPRISE_FACTORY_ADDRESS"
+
   idx-integration:
     runs-on: ubuntu-latest
 
@@ -72,6 +104,34 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache
           file: ${{ env.IDX_DOCKERFILE }}
           context: ${{ env.IDX_CONTEXT_PATH }}
+
+  stats-integration:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Test Build
+        uses: docker/build-push-action@v3
+        with:
+          push: false
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
+          file: ${{ env.STATS_DOCKERFILE }}
+          context: ${{ env.STATS_CONTEXT_PATH }}
 
   api-integration:
     runs-on: ubuntu-latest
@@ -154,6 +214,59 @@ jobs:
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ env.IDX_ECR_REPO }}:${{ env.DOCKER_IMAGE_TAG }}
 
+  stats-delivery:
+    runs-on: ubuntu-latest
+    needs: [stats-integration]
+
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Set tags
+        run: |
+          if [ ${GITHUB_REF} == "refs/heads/main" ]; then
+            echo "DOCKER_IMAGE_TAG=phoenix-1" >> $GITHUB_ENV
+          elif [ ${GITHUB_REF} == "refs/heads/develop" ]; then
+            echo "DOCKER_IMAGE_TAG=pisco-1" >> $GITHUB_ENV
+          elif [ ${GITHUB_REF} == "refs/heads/staging" ]; then
+            echo "DOCKER_IMAGE_TAG=staging" >> $GITHUB_ENV
+          else 
+            echo "DOCKER_IMAGE_TAG=latest" >> $GITHUB_ENV
+          fi
+
+      - name: Build, tag, and push docker image to AWS ECR
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
+          file: ${{ env.STATS_DOCKERFILE }}
+          context: ${{ env.STATS_CONTEXT_PATH }}
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.STATS_ECR_REPO }}:${{ env.DOCKER_IMAGE_TAG }}
+
   api-delivery:
     runs-on: ubuntu-latest
     needs: [api-integration]
@@ -207,19 +320,46 @@ jobs:
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ env.API_ECR_REPO }}:${{ env.DOCKER_IMAGE_TAG }}
 
-  dispatch:
+  dispatch-phoenix:
     runs-on: ubuntu-latest
-    needs: [idx-delivery, api-delivery]
+    needs: [idx-delivery, api-delivery, stats-delivery, refs-parsing]
+    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Set Remote ref
         run: |
-          if [ ${GITHUB_REF} == "refs/heads/main" ]; then
-            echo "TF_GITHUB_REF=phoenix-1" >> $GITHUB_ENV
-          elif [ ${GITHUB_REF} == "refs/heads/develop" ]; then
-            echo "TF_GITHUB_REF=pisco-1" >> $GITHUB_ENV
-          elif [ ${GITHUB_REF} == "refs/heads/staging" ]; then
-            echo "TF_GITHUB_REF=pisco-1-staging" >> $GITHUB_ENV
+          echo "TF_GITHUB_REF=phoenix-1" >> $GITHUB_ENV
+
+      - name: Get genesis block
+        run: |
+          # Install dependencies
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+          # Make HTTP request and parse response
+          RESPONSE=$(curl -s "https://phoenix-lcd.terra.dev/cosmwasm/wasm/v1/contract/${{ needs.refs-parsing.outputs.mainnet_enterprise_factory_address }}")
+          BLOCK_HEIGHT=$(echo "$RESPONSE" | jq -r '.contract_info.created.block_height')
+
+          # Set environment variable for subsequent steps
+          echo "BLOCK_HEIGHT=$BLOCK_HEIGHT" >> $GITHUB_ENV
+
+      - name: Check variables
+        run: |
+          if [ -z "${{ needs.refs-parsing.outputs.testnet_enterprise_factory_address }}" ] || [ -z "${{ env.BLOCK_HEIGHT }}" ]; then
+            echo "Either FACTORY_ADDRESS or GENESIS_HEIGHT is empty"
+            exit 1
+          fi
+
+          if [[ ! "${{ needs.refs-parsing.outputs.testnet_enterprise_factory_address }}" =~ ^terra ]]; then
+            echo "FACTORY_ADDRESS does not start with 'terra'"
+            exit 1
+          fi
+
+          if [ "${{ env.BLOCK_HEIGHT }}" -eq "${{ env.BLOCK_HEIGHT }}" ] 2>/dev/null; then
+            echo "GENESIS_HEIGHT is a number"
+          else
+            echo "GENESIS_HEIGHT is not a number"
+            exit 1
           fi
 
       - name: Invoke Terraform Workflow
@@ -229,3 +369,57 @@ jobs:
           ref: ${{ env.TF_GITHUB_REF }}
           workflow: Terraform
           token: ${{ secrets.TFL_GITHUB_TOKEN }}
+          inputs: '{ "FACTORY_ADDRESS": "${{ needs.refs-parsing.outputs.mainnet_enterprise_factory_address }}", "GENESIS_HEIGHT": "${{env.BLOCK_HEIGHT}}"}'
+
+  dispatch-pisco:
+    runs-on: ubuntu-latest
+    needs: [idx-delivery, api-delivery, stats-delivery, refs-parsing]
+
+    steps:
+      - name: Set Remote ref
+        run: |
+          if [ ${GITHUB_REF} == "refs/heads/main" ]; then
+            echo "TF_GITHUB_REF=pisco-1" >> $GITHUB_ENV
+          elif [ ${GITHUB_REF} == "refs/heads/staging" ]; then
+            echo "TF_GITHUB_REF=pisco-1-staging" >> $GITHUB_ENV
+          fi
+      - name: Get genesis block
+        run: |
+          # Install dependencies
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+          # Make HTTP request and parse response
+          RESPONSE=$(curl -s "https://pisco-lcd.terra.dev/cosmwasm/wasm/v1/contract/${{ needs.refs-parsing.outputs.testnet_enterprise_factory_address }}")
+          BLOCK_HEIGHT=$(echo "$RESPONSE" | jq -r '.contract_info.created.block_height')
+
+          # Set environment variable for subsequent steps
+          echo "BLOCK_HEIGHT=$BLOCK_HEIGHT" >> $GITHUB_ENV
+
+      - name: Check variables
+        run: |
+          if [ -z "${{ needs.refs-parsing.outputs.testnet_enterprise_factory_address }}" ] || [ -z "${{ env.BLOCK_HEIGHT }}" ]; then
+            echo "Either FACTORY_ADDRESS or GENESIS_HEIGHT is empty"
+            exit 1
+          fi
+
+          if [[ ! "${{ needs.refs-parsing.outputs.testnet_enterprise_factory_address }}" =~ ^terra ]]; then
+            echo "FACTORY_ADDRESS does not start with 'terra'"
+            exit 1
+          fi
+
+          if [ "${{ env.BLOCK_HEIGHT }}" -eq "${{ env.BLOCK_HEIGHT }}" ] 2>/dev/null; then
+            echo "GENESIS_HEIGHT is a number"
+          else
+            echo "GENESIS_HEIGHT is not a number"
+            exit 1
+          fi
+
+      - name: Invoke Terraform Workflow
+        uses: aurelien-baudet/workflow-dispatch@v2
+        with:
+          repo: ${{ env.TERRAFORM_REPO }}
+          ref: ${{ env.TF_GITHUB_REF }}
+          workflow: Terraform
+          token: ${{ secrets.TFL_GITHUB_TOKEN }}
+          inputs: '{ "FACTORY_ADDRESS": "${{ needs.refs-parsing.outputs.testnet_enterprise_factory_address }}", "GENESIS_HEIGHT": "${{env.BLOCK_HEIGHT}}"}'

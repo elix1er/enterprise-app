@@ -1,7 +1,7 @@
 import { WizardStep } from '../WizardStep';
-import { Stack } from '@mui/material';
-import { WizardInput } from '../WizardInput';
 import { NftMembershipInfo, useDaoWizardForm } from '../DaoWizardFormProvider';
+import { TextInput } from 'lib/ui/inputs/TextInput';
+import { VStack } from 'lib/ui/Stack';
 
 export function NftMembershipStep() {
   const {
@@ -15,29 +15,29 @@ export function NftMembershipStep() {
 
   return (
     <WizardStep title="Provide NFT details">
-      <Stack direction="column" spacing={4}>
-        <WizardInput
+      <VStack gap={16}>
+        <TextInput
           label="NFT Name"
-          placeholder="Type a name of your NFT"
+          placeholder="Enter the name of your NFT"
           value={nftMembership.nftName}
           error={nftMembership.nftNameError}
-          onChange={({ currentTarget }) => onChange({ nftName: currentTarget.value })}
+          onValueChange={(nftName) => onChange({ nftName })}
         />
-        <WizardInput
+        <TextInput
           label="NFT Symbol"
-          placeholder="Type a symbol of your NFT"
+          placeholder="Enter the symbol of your NFT"
           value={nftMembership.nftSymbol}
           error={nftMembership.nftSymbolError}
-          onChange={({ currentTarget }) => onChange({ nftSymbol: currentTarget.value })}
+          onValueChange={(nftSymbol) => onChange({ nftSymbol })}
         />
-        <WizardInput
-          label="NFT Minter"
-          placeholder="Minter Terra address"
+        <TextInput
+          label="NFT Mint Contract"
+          placeholder="Terra contract address"
           value={nftMembership.minter}
           error={nftMembership.minterError}
-          onChange={({ currentTarget }) => onChange({ minter: currentTarget.value })}
+          onValueChange={(minter) => onChange({ minter })}
         />
-      </Stack>
+      </VStack>
     </WizardStep>
   );
 }

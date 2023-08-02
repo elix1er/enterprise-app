@@ -1,10 +1,9 @@
-import { FormState } from '@terra-money/apps/hooks';
-import { validateAmount } from '@terra-money/apps/utils';
+import { FormState } from 'lib/shared/hooks/useForm';
 import { DaoGovConfigInput } from '../DaoGovConfigInput';
 
 export const validateUnlockingPeriod = (unlockingPeriod: number, voteDuration: number) => {
   if (unlockingPeriod < voteDuration) {
-    return 'Unstaking duration cannot be shorter than proposal voting duration';
+    return 'The vote duration must be longer than the unlocking period.';
   }
 };
 
@@ -16,7 +15,7 @@ export const validateGovConfig = ({
   voteDuration,
   minimumDeposit,
   allowEarlyProposalExecution,
-  minimumWeightForRewards
+  minimumWeightForRewards,
 }: DaoGovConfigInput): FormState<DaoGovConfigInput> => {
   const formState: FormState<DaoGovConfigInput> = {
     quorum,
@@ -26,13 +25,10 @@ export const validateGovConfig = ({
     minimumDeposit,
     vetoThreshold,
     allowEarlyProposalExecution,
-    minimumWeightForRewards
+    minimumWeightForRewards,
   };
 
   formState.unlockingPeriodError = validateUnlockingPeriod(unlockingPeriod, voteDuration);
-
-  formState.thresholdError = validateAmount(Math.round(threshold * 100), 50, 100, 'Threshold');
-  formState.vetoThresholdError = validateAmount(Math.round(threshold * 100), 50, 100, 'Veto threshold');
 
   return formState;
 };

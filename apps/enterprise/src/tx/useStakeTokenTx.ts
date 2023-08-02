@@ -1,30 +1,38 @@
-import { useTx, TxBuilder } from '@terra-money/apps/libs/transactions';
-import { u } from '@terra-money/apps/types';
-import { BigSource } from 'big.js';
+import { useTx, TxBuilder } from 'chain/transactions';
 import { enterprise } from 'types/contracts';
 import { TX_KEY } from './txKey';
 import { useTxOverrides } from './useFeeOverrides';
+import { useMyAddress } from 'chain/hooks/useMyAddress';
+import { assertDefined } from 'lib/shared/utils/assertDefined';
+import { useChainID } from 'chain/hooks/useChainID';
 
 interface StakeTokenTxOptions {
   daoAddress: string;
   tokenAddress: string;
-  amount: u<BigSource>;
+  amount: string;
 }
 
 export const useStakeTokenTx = () => {
   const txOverrides = useTxOverrides();
 
+  const myAddress = useMyAddress();
+
+  const chainID = useChainID();
+
   return useTx<StakeTokenTxOptions>(
     (options) => {
-      const { daoAddress, tokenAddress, amount, wallet } = options;
+      const { daoAddress, tokenAddress, amount } = options;
 
-      const tx = TxBuilder.new()
-        .hook<enterprise.Cw20HookMsg>(wallet.walletAddress, daoAddress, tokenAddress, amount.toString(), { stake: {} })
+      const payload = TxBuilder.new()
+        .hook<enterprise.Cw20HookMsg>(assertDefined(myAddress), daoAddress, tokenAddress, amount.toString(), {
+          stake: {},
+        })
         .build();
 
       return {
         ...txOverrides,
-        ...tx,
+        ...payload,
+        chainID,
       };
     },
     {

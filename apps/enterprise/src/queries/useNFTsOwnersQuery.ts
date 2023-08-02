@@ -1,6 +1,5 @@
-import { contractQuery } from '@terra-money/apps/queries';
-import { CW20Addr } from '@terra-money/apps/types';
-import { NetworkInfo, useWallet } from '@terra-money/wallet-provider';
+import { LCDClient } from '@terra-money/feather.js';
+import { useLCDClient } from '@terra-money/wallet-provider';
 import { useQuery, UseQueryResult } from 'react-query';
 
 export interface NFTPairs {
@@ -8,34 +7,30 @@ export interface NFTPairs {
   tokenIds: any;
 }
 
-
 const fetchDAONFTsWhitelist = async (
-    network: NetworkInfo,
-    whitelistAddrCollection: CW20Addr[],
-    daoAddress: string,
-  ): Promise<NFTPairs[]> => {
-    const nftpairs = await Promise.all(
-      whitelistAddrCollection.map(async (addr: CW20Addr) => {
-        const tokenIds: string[]  = await contractQuery(network, addr, {
-          tokens: { owner: daoAddress },
-        });
-        return { collectionAddress: addr, tokenIds };
-      }),
-    );
-    return nftpairs;
-  };
+  lcd: LCDClient,
+  whitelistAddrCollection: string[],
+  daoAddress: string
+): Promise<NFTPairs[]> => {
+  const nftpairs = await Promise.all(
+    whitelistAddrCollection.map(async (addr: string) => {
+      const tokenIds: string[] = await lcd.wasm.contractQuery(addr, {
+        tokens: { owner: daoAddress },
+      });
+      return { collectionAddress: addr, tokenIds };
+    })
+  );
+  return nftpairs;
+};
 
 export const useNFTsOwnersQuery = (
-  whitelistAddrCollection: CW20Addr[],
-  daoAddress: string,
+  whitelistAddrCollection: string[],
+  daoAddress: string
 ): UseQueryResult<NFTPairs[]> => {
-  const { network } = useWallet();
+  const lcd = useLCDClient();
+
   return useQuery([whitelistAddrCollection, daoAddress], async () => {
-    const nftpairs = await fetchDAONFTsWhitelist(
-      network,
-      whitelistAddrCollection,
-      daoAddress,
-    );
+    const nftpairs = await fetchDAONFTsWhitelist(lcd, whitelistAddrCollection, daoAddress);
     return nftpairs;
   });
 };

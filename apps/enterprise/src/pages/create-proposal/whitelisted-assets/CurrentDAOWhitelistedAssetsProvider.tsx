@@ -1,25 +1,22 @@
-import { getValueProviderSetup } from '@terra-money/apps/utils';
-import { Throbber } from 'components/primitives';
-import { useCurrentDao } from 'dao/components/CurrentDaoProvider';
-import { useDAOAssetsWhitelist } from 'queries';
-import { enterprise } from 'types/contracts';
+import { getValueProviderSetup } from 'lib/shared/utils/getValueProviderSetup';
+import { Asset } from 'chain/Asset';
+import { Spinner } from 'lib/ui/Spinner';
+import { useCurrentDaoAssetWhitelistQuery } from 'queries/useCurrentDaoAssetWhitelistQuery';
 
 interface Props {
   children: React.ReactNode;
 }
 
 const { provider: WhitelistedAssetsProvider, useValue: useCurrentDaoWhitelistedAssets } =
-  getValueProviderSetup<enterprise.AssetInfoBaseFor_Addr[]>('WhitelistedAssets');
+  getValueProviderSetup<Asset[]>('WhitelistedAssets');
 
 export { useCurrentDaoWhitelistedAssets };
 
 export const CurrentDAOWhitelistedAssetsProvider = ({ children }: Props) => {
-  const dao = useCurrentDao();
-
-  const { data: whitelistedAssets } = useDAOAssetsWhitelist(dao.address);
+  const { data: whitelistedAssets } = useCurrentDaoAssetWhitelistQuery();
 
   if (!whitelistedAssets) {
-    return <Throbber />;
+    return <Spinner />;
   }
 
   return <WhitelistedAssetsProvider value={whitelistedAssets}>{children}</WhitelistedAssetsProvider>;

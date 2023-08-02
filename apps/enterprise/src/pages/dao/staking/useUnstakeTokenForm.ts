@@ -1,11 +1,10 @@
-import { useForm } from '@terra-money/apps/hooks';
-import { microfy } from '@terra-money/apps/libs/formatting';
-import { u } from '@terra-money/apps/types';
-import { useConnectedWallet } from '@terra-money/wallet-provider';
+import { toChainAmount } from 'chain/utils/toChainAmount';
+
 import Big from 'big.js';
+import { useForm } from 'lib/shared/hooks/useForm';
 
 interface UnstakeTokenFormInput {
-  amount?: string;
+  amount?: number;
 }
 
 interface UnstakeTokenFormState extends UnstakeTokenFormInput {
@@ -13,33 +12,27 @@ interface UnstakeTokenFormState extends UnstakeTokenFormInput {
 }
 
 const initialState: UnstakeTokenFormState = {
-  amount: '',
+  amount: undefined,
   submitDisabled: true,
 };
 
 interface UseUnstakeTokenFormOptions {
-  staked: u<Big>;
+  staked: Big;
   decimals: number;
 }
 
 export const useUnstakeTokenForm = (options: UseUnstakeTokenFormOptions) => {
   const { staked, decimals } = options;
 
-  const connectedWallet = useConnectedWallet();
-
   return useForm<UnstakeTokenFormInput, UnstakeTokenFormState>(async (input, getState, dispatch) => {
-    if (connectedWallet === undefined) {
-      throw Error('The wallet is not connected');
-    }
-
     const state = {
       ...getState(),
       ...input,
     };
 
-    const uAmount = input.amount ? microfy(input.amount, decimals) : Big(0);
+    const uAmount = input.amount ? toChainAmount(input.amount, decimals) : Big(0);
 
-    const submitDisabled = uAmount.lte(0) || uAmount.gt(staked);
+    const submitDisabled = Big(uAmount).lte(0) || Big(uAmount).gt(staked);
 
     dispatch({ ...state, submitDisabled });
   }, initialState);

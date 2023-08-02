@@ -1,28 +1,36 @@
-import { AnimateNumber } from '@terra-money/apps/components';
-import { useAssertConnectedWallet } from '@terra-money/apps/hooks';
-import { Address } from 'components/address';
-import { VStack } from 'lib/ui/Stack';
-import { Text } from 'lib/ui/Text';
-import { FriendlyFormatter } from 'components/numeric-panel';
-import { demicrofy } from '@terra-money/apps/libs/formatting';
-import Big from 'big.js';
-import { LUNA, u } from '@terra-money/apps/types';
-import { useNativeBalanceQuery } from 'queries/useNativeBalanceQuery';
+import { useAssertMyAddress } from 'chain/hooks/useAssertMyAddress';
+import { LabeledValue } from 'lib/ui/LabeledValue';
+import { QueryDependant } from 'lib/query/components/QueryDependant';
+import { Spinner } from 'lib/ui/Spinner';
+import { Address } from '../Address';
+import { fromChainAmount } from 'chain/utils/fromChainAmount';
+import { formatAmount } from 'lib/shared/utils/formatAmount';
+import { lunaInfo } from 'chain/utils/getAssetsInfo';
+import { useAssetBalanceQury } from 'chain/queries/useAssetBalanceQuery';
 
 export const ConnectedWalletSummary = () => {
-  const connectedWallet = useAssertConnectedWallet();
+  const address = useAssertMyAddress();
 
-  const { data: balance = Big(0) as u<Big> } = useNativeBalanceQuery();
+  const { data, status } = useAssetBalanceQury({
+    address,
+    asset: {
+      id: 'uluna',
+      type: 'native',
+    },
+  });
 
   return (
-    <VStack gap={8}>
-      <Address address={connectedWallet.walletAddress} />
-      <Text size={18} weight="semibold">
-        <AnimateNumber format={(v) => FriendlyFormatter(v, 2)}>{demicrofy(balance, LUNA.decimals)}</AnimateNumber>
-        <Text style={{ marginLeft: 8 }} as="span">
-          LUNA
-        </Text>
-      </Text>
-    </VStack>
+    <>
+      <Address value={address} />
+      <LabeledValue name="Balance">
+        <QueryDependant
+          data={data}
+          status={status}
+          loading={() => <Spinner />}
+          error={() => 'Failed to fetch balance'}
+          success={(value) => `${formatAmount(fromChainAmount(value.toString(), lunaInfo.decimals))} LUNA`}
+        />
+      </LabeledValue>
+    </>
   );
 };

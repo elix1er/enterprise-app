@@ -1,11 +1,10 @@
-import { Container } from '@terra-money/apps/components';
+import { Stack } from 'lib/ui/Stack';
 import { WizardStep } from '../WizardStep';
-import styles from './MembersStep.module.sass';
 import { MultisigMemberInput } from './member/MultisigMemberInput';
-import { isFormStateValid } from '@terra-money/apps/utils';
 import { EMPTY_MEMBER, useDaoWizardForm } from '../DaoWizardFormProvider';
-import { AddButton } from 'components/add-button';
 import { MultisigMember } from 'types/MultisigMember';
+import { isFormStateValid } from 'lib/shared/hooks/useForm';
+import { AddButton } from 'lib/ui/buttons/AddButton';
 
 const updateMember = (members: MultisigMember[], index: number, params: Partial<MultisigMember>): MultisigMember[] => {
   return members.map((member, i) => {
@@ -34,8 +33,11 @@ export function MembersStep() {
   const areAllMembersValid = members.every(isFormStateValid);
 
   return (
-    <WizardStep title="Add members to the multisig" subTitle="You need at least two members for the multisig">
-      <Container gap={24} className={styles.membersList} direction="column" component="section">
+    <WizardStep
+      title="Add members to the multisig"
+      subTitle="You need at least two members to create a multisig DAO. Weights are the number of votes given to an address."
+    >
+      <Stack gap={24} direction="column" as="section">
         {members.map((formState, index) => {
           return (
             <MultisigMemberInput
@@ -48,8 +50,10 @@ export function MembersStep() {
             />
           );
         })}
-        {areAllMembersValid && <AddButton onClick={() => formInput({ members: [...members, EMPTY_MEMBER] })} />}
-      </Container>
+        {areAllMembersValid && (
+          <AddButton size="l" onClick={() => formInput({ members: [...members, EMPTY_MEMBER] })} />
+        )}
+      </Stack>
     </WizardStep>
   );
 }

@@ -9,7 +9,7 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
-    "sourceMap": false,
+    "sourceMap": true,
     "module": "esnext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
@@ -17,9 +17,6 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "baseUrl": "src"
-  },
-  "paths": {
-    "@terra-money/apps/*": ["../../shared/*"]
   },
   "include": ["src"]
 }

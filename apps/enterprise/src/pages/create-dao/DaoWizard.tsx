@@ -1,5 +1,3 @@
-import { getLast } from '@terra-money/apps/utils';
-import { ConditionalRender } from 'components/primitives';
 import { useNavigate } from 'react-router';
 import { useCreateDAOTx } from 'tx';
 import { useDaoWizardForm } from './DaoWizardFormProvider';
@@ -16,13 +14,15 @@ import { InitialBalancesStep } from './token/InitialBalancesStep';
 import { TokenInfoStep } from './token/TokenInfoStep';
 import { WizardLayout } from './WizardLayout';
 import { CouncilStep } from './shared/CouncilStep';
-import { useRefCallback } from '@terra-money/apps/hooks';
-import { CompletedTransaction, useTransactionSubscribers } from '@terra-money/apps/libs/transactions';
+import { CompletedTransaction, useTransactionSubscribers } from 'chain/transactions';
 import { reportError } from 'errors/errorMonitoring';
 import { SameWidthChildrenRow } from 'lib/ui/Layout/SameWidthChildrenRow';
-import { PrimaryButton } from 'lib/ui/buttons/rect/PrimaryButton';
+import { Button } from 'lib/ui/buttons/Button';
 import { useState } from 'react';
 import { WhitelistStep } from './WhitelistStep';
+import { Match } from 'lib/ui/Match';
+import { getLast } from 'lib/shared/utils/getlast';
+import { useRefCallback } from 'chain/transactions/utils/useRefCallback';
 
 export const DaoWizard = () => {
   const navigate = useNavigate();
@@ -48,7 +48,7 @@ export const DaoWizard = () => {
         const address = transaction.logs[0].eventsByType.wasm.dao_address[0];
         navigate(`/dao/${address}`);
       } catch (error) {
-        reportError(error, { msg: 'Fail to extract dao_address from transaction logs' });
+        reportError(error, { msg: 'Failed to extract dao_address from transaction logs' });
       }
     },
     [txResult, setIsFinishLoading]
@@ -56,21 +56,21 @@ export const DaoWizard = () => {
 
   const onFailed = useRefCallback(() => {
     setIsFinishLoading(false);
-  }, [setIsFinishLoading])
+  }, [setIsFinishLoading]);
 
   const onCancelled = useRefCallback(() => {
     setIsFinishLoading(false);
-  }, [setIsFinishLoading])
+  }, [setIsFinishLoading]);
 
   useTransactionSubscribers({
     onCompleted,
     onFailed,
-    onCancelled
+    onCancelled,
   });
 
-  const isBackVisible = steps.length > 1
-  const isNextVisible = steps.length < predictedSteps.length
-  const isFinishVisible = steps.length === predictedSteps.length
+  const isBackVisible = steps.length > 1;
+  const isNextVisible = steps.length < predictedSteps.length;
+  const isFinishVisible = steps.length === predictedSteps.length;
 
   const onFinish = async () => {
     try {
@@ -78,39 +78,40 @@ export const DaoWizard = () => {
       await createDaoTx(toCreateDaoMsg(formState));
     } catch (error) {
       setIsFinishLoading(false);
-      console.log(error);
+      reportError(error, {
+        message: 'Failed to create DAO transaction',
+      });
     }
-  }
+  };
 
   const percentageComplete = Math.trunc(((steps.length - 1) / predictedSteps.length) * 100);
 
   const step = getLast(steps);
 
   return (
-    <WizardLayout percentageComplete={percentageComplete}
+    <WizardLayout
+      percentageComplete={percentageComplete}
       footer={
-        (
-          <SameWidthChildrenRow fullWidth gap={16} childrenWidth={140}>
-            {isBackVisible && (
-              <PrimaryButton kind="secondary" onClick={back}>
-                Back
-              </PrimaryButton>
-            )}
-            {isNextVisible && (
-              <PrimaryButton onClick={forward} disabled={!isValid}>
-                Next
-              </PrimaryButton>
-            )}
-            {isFinishVisible && (
-              <PrimaryButton onClick={onFinish} isLoading={isFinishLoading}>
-                Finish
-              </PrimaryButton>
-            )}
-          </SameWidthChildrenRow>
-        )
+        <SameWidthChildrenRow fullWidth gap={16} childrenWidth={140}>
+          {isBackVisible && (
+            <Button kind="secondary" onClick={back}>
+              Back
+            </Button>
+          )}
+          {isNextVisible && (
+            <Button onClick={forward} disabled={!isValid}>
+              Next
+            </Button>
+          )}
+          {isFinishVisible && (
+            <Button isLoading={isFinishLoading} onClick={onFinish}>
+              Finish
+            </Button>
+          )}
+        </SameWidthChildrenRow>
       }
     >
-      <ConditionalRender
+      <Match
         value={step}
         type={() => <SelectDaoTypeStep />}
         daoImport={() => <ImportStep />}

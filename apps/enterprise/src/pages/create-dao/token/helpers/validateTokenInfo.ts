@@ -1,13 +1,25 @@
-import { FormState } from '@terra-money/apps/hooks';
-import { validateAddress, validateAmount, validateLength, validatePattern, validateUrl } from '@terra-money/apps/utils';
+import { validateAddress } from 'chain/utils/validators';
+import { FormState } from 'lib/shared/hooks/useForm';
+import { validateAmount } from 'lib/shared/utils/validateAmount';
+import { validateLength } from 'lib/shared/utils/validateLength';
+import { validatePattern } from 'lib/shared/utils/validatePattern';
+import { validateUrl } from 'lib/ui/utils/validateUrl';
 import { TokenInfo } from 'pages/create-dao/DaoWizardFormProvider';
 
-export const validateTokenInfo = ({ decimals, name, symbol, description,
+export const validateTokenInfo = ({
+  decimals,
+  name,
+  symbol,
+  description,
   logo,
   marketingOwner,
-  project, }: TokenInfo): FormState<TokenInfo> => {
+  project,
+}: TokenInfo): FormState<TokenInfo> => {
   const formState: FormState<TokenInfo> = {
-    decimals, name, symbol, description,
+    decimals,
+    name,
+    symbol,
+    description,
     logo,
     marketingOwner,
     project,
@@ -16,7 +28,7 @@ export const validateTokenInfo = ({ decimals, name, symbol, description,
   formState.nameError = validateLength(name, 3, 140, 'name');
   formState.symbolError =
     validateLength(symbol, 3, 12, 'symbol') ??
-    validatePattern(symbol, /[a-zA-Z]{3,12}$/, 'The symbol is not in the correct format');
+    validatePattern(symbol, /[a-zA-Z]{3,12}$/, 'Asset symbols can only be made of letters');
   formState.decimalsError = validateAmount(decimals, 4, 18, 'decimals');
 
   if (logo) {

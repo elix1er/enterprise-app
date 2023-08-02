@@ -1,7 +1,8 @@
-import { UIElementProps } from '@terra-money/apps/components';
-import { ConnectedWallet, useConnectedWallet, NetworkInfo, useWallet } from '@terra-money/wallet-provider';
 import { createContext, Dispatch, useContext, useEffect, useReducer } from 'react';
 import { Favourite } from './types';
+import { useMyAddress } from 'chain/hooks/useMyAddress';
+import { ComponentWithChildrenProps } from 'lib/shared/props';
+import { NetworkName, useNetworkName } from 'chain/hooks/useNetworkName';
 
 interface PersonalizationState {
   favourites: Array<Favourite>;
@@ -57,13 +58,13 @@ export const usePersonalization = () => {
   return context;
 };
 
-interface PersonalizationProviderProps extends UIElementProps {}
+interface PersonalizationProviderProps extends ComponentWithChildrenProps {}
 
-const createStorageKey = (network: NetworkInfo, connectedWallet?: ConnectedWallet) => {
-  const parts = ['__personalization', network.name];
+const createStorageKey = (networkName: NetworkName, address?: string) => {
+  const parts = ['__personalization', networkName];
 
-  if (connectedWallet) {
-    parts.push(connectedWallet.walletAddress);
+  if (address) {
+    parts.push(address);
   }
 
   return parts.join('_');
@@ -72,11 +73,10 @@ const createStorageKey = (network: NetworkInfo, connectedWallet?: ConnectedWalle
 export const PersonalizationProvider = (props: PersonalizationProviderProps) => {
   const { children } = props;
 
-  const { network } = useWallet();
+  const networkName = useNetworkName();
+  const myAddress = useMyAddress();
 
-  const connectedWallet = useConnectedWallet();
-
-  const storageKey = createStorageKey(network, connectedWallet);
+  const storageKey = createStorageKey(networkName, myAddress);
 
   const value = useReducer(personalizationReducer, initialValue, (initial) => {
     const storage = localStorage.getItem(storageKey);

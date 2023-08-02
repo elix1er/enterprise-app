@@ -1,7 +1,8 @@
-import { TxBuilder, useTx } from "@terra-money/apps/libs/transactions";
-import { useAssertMyAddress } from "chain/hooks/useAssertMyAddress";
-import { TX_KEY } from "tx";
-import { funds_distributor } from "types/contracts";
+import { useChainID } from 'chain/hooks/useChainID';
+import { TxBuilder, useTx } from 'chain/transactions';
+import { useAssertMyAddress } from 'chain/hooks/useAssertMyAddress';
+import { TX_KEY } from 'tx';
+import { funds_distributor } from 'types/contracts';
 
 export interface ClaimRewardsParams {
   fundsDistributorAddress: string;
@@ -12,6 +13,8 @@ export interface ClaimRewardsParams {
 export const useClaimRewardsTx = () => {
   const walletAddress = useAssertMyAddress();
 
+  const chainID = useChainID();
+
   return useTx<ClaimRewardsParams>(
     ({ fundsDistributorAddress, cw20Assets, nativeDenoms }) => {
       let builder = TxBuilder.new();
@@ -21,13 +24,16 @@ export const useClaimRewardsTx = () => {
           cw20_assets: cw20Assets,
           native_denoms: nativeDenoms,
           user: walletAddress,
-        }
-      })
+        },
+      });
 
-      return builder.build()
+      return {
+        ...builder.build(),
+        chainID,
+      };
     },
     {
       txKey: TX_KEY.CLAIM_REWARDS,
     }
   );
-}
+};

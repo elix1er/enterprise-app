@@ -1,12 +1,28 @@
-import { Stack } from '@mui/material';
+import { VStack } from 'lib/ui/Stack';
 import { TokenInfo, useDaoWizardForm } from '../DaoWizardFormProvider';
-import { WizardInput } from '../WizardInput';
 import { WizardStep } from '../WizardStep';
+import { TextInput } from 'lib/ui/inputs/TextInput';
+import { WithHint } from 'lib/ui/WithHint';
 
 export const TokenInfoStep = () => {
   const { formState, formInput } = useDaoWizardForm();
   const {
-    tokenInfo: { decimals, decimalsError, name, nameError, symbol, symbolError, description, descriptionError, logo, logoError, marketingOwner, marketingOwnerError, project, projectError },
+    tokenInfo: {
+      decimals,
+      decimalsError,
+      name,
+      nameError,
+      symbol,
+      symbolError,
+      description,
+      descriptionError,
+      logo,
+      logoError,
+      marketingOwner,
+      marketingOwnerError,
+      project,
+      projectError,
+    },
   } = formState;
 
   const onChange = (params: Partial<TokenInfo>) => {
@@ -15,62 +31,64 @@ export const TokenInfoStep = () => {
 
   return (
     <WizardStep title="Create your token">
-      <Stack direction="column" spacing={4}>
-        <WizardInput
+      <VStack gap={16}>
+        <TextInput
           label="Token Name"
-          placeholder="Type name of your token"
+          placeholder="Enter a name for your token"
           value={name}
           error={name.length > 0 ? nameError : undefined}
-          onChange={({ currentTarget }) => onChange({ name: currentTarget.value })}
+          onValueChange={(name) => onChange({ name })}
         />
-        <WizardInput
+        <TextInput
           label="Token Symbol"
-          placeholder="Type symbol of your token"
+          placeholder="Enter a symbol for your token"
           value={symbol}
           error={symbol.length > 0 ? symbolError : undefined}
-          onChange={({ currentTarget }) => onChange({ symbol: currentTarget.value })}
+          onValueChange={(symbol) => onChange({ symbol })}
         />
-        <WizardInput
+        <TextInput
           label="Decimals"
           value={decimals || undefined}
           type="number"
           error={decimalsError}
-          onChange={({ currentTarget }) => {
-            const newDecimals = Number(currentTarget.value);
+          onValueChange={(value) => {
+            const newDecimals = Number(value);
             onChange({ decimals: isNaN(newDecimals) ? undefined : newDecimals });
           }}
         />
-        <WizardInput
+        <TextInput
           label="Description"
-          placeholder="Enter token description"
+          placeholder="Enter a description for your token"
           value={description}
           error={description !== undefined && description?.length > 0 ? descriptionError : undefined}
-          onChange={({ currentTarget }) => onChange({ description: currentTarget.value })}
+          onValueChange={(description) => onChange({ description })}
         />
-        <WizardInput
+        <TextInput
           label="Logo URL"
-          placeholder="Enter logo url"
+          placeholder="Enter a logo url"
           value={logo}
           error={logo !== undefined && logo?.length > 0 ? logoError : undefined}
-          onChange={({ currentTarget }) => onChange({ logo: currentTarget.value })}
+          onValueChange={(logo) => onChange({ logo })}
         />
-        <WizardInput
-          label="Marketing Owner Address"
-          placeholder="Enter wallet address"
+        <TextInput
+          label={
+            <WithHint hint="A Marketing owner can update the description and project name">
+              Marketing Owner Address
+            </WithHint>
+          }
+          placeholder="Enter a wallet address"
           value={marketingOwner}
           error={marketingOwner !== undefined && marketingOwner?.length > 0 ? marketingOwnerError : undefined}
-          onChange={({ currentTarget }) => onChange({ marketingOwner: currentTarget.value })}
-          helpText='The address who can update description and project name'
+          onValueChange={(marketingOwner) => onChange({ marketingOwner })}
         />
-        <WizardInput
-          label="Project URL"
-          placeholder="Type project name"
+        <TextInput
+          label={<WithHint hint="This URL should point to a project website">Project URL</WithHint>}
+          placeholder="Enter your project's URL"
           value={project}
           error={project !== undefined && project?.length > 0 ? projectError : undefined}
-          onChange={({ currentTarget }) => onChange({ project: currentTarget.value })}
-          helpText='Should point to a project repository'
+          onValueChange={(project) => onChange({ project })}
         />
-      </Stack>
+      </VStack>
     </WizardStep>
   );
 };

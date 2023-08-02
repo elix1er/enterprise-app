@@ -1,18 +1,16 @@
-import { Container, UIElementProps } from '@terra-money/apps/components';
-import classNames from 'classnames';
 import { ReactNode } from 'react';
-import styles from './FormFooter.module.sass';
+import { SameWidthChildrenRow } from 'lib/ui/Layout/SameWidthChildrenRow';
 
-interface FormFooterProps extends UIElementProps {
+interface FormFooterProps {
   primary: ReactNode;
   secondary: ReactNode;
 }
 
-export const FormFooter = ({ primary, secondary, className }: FormFooterProps) => {
+export const FormFooter = ({ primary, secondary }: FormFooterProps) => {
   return (
-    <Container className={classNames(className, styles.root)} gap={16} direction="row">
+    <SameWidthChildrenRow  gap={16} childrenWidth={140}>
       {secondary}
       {primary}
-    </Container>
+    </SameWidthChildrenRow>
   );
 };

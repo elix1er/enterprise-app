@@ -22,7 +22,7 @@ export class BlockListener {
   }
 
   private wait = async (height: number): Promise<[BlockInfo, TxInfo[]]> => {
-    this.logger.info(`Process block with height=${height}`)
+    this.logger.info(`Process block with height=${height}`);
 
     const chainId = assertEnvVar('CHAIN_ID');
 
@@ -35,25 +35,26 @@ export class BlockListener {
           continue;
         }
 
-        const txs: TxInfo[] = []
-        const rawTxs = blockInfo.block.data.txs || []
-        await Promise.all(rawTxs.map(async (tx) => {
-          const txHash = hashToHex(tx)
-          try {
-            const info = await retry({
-              func: () => this.lcd.tx.txInfo(txHash, chainId),
-              maxRetries: 5,
-              retryInterval: 2000,
-            })
-            txs.push(info)
-          } catch (err) {
-            this.logger.error(`Error fetching infor for transaction with hash=${txHash}`, err)
-          }
-        }))
+        const txs: TxInfo[] = [];
+        const rawTxs = blockInfo.block.data.txs || [];
+        await Promise.all(
+          rawTxs.map(async (tx) => {
+            const txHash = hashToHex(tx);
+            try {
+              const info = await retry({
+                func: () => this.lcd.tx.txInfo(txHash, chainId),
+                retryInterval: 10000,
+              });
+              txs.push(info);
+            } catch (err) {
+              this.logger.error(`Error fetching info for transaction with hash=${txHash}`, err);
+            }
+          })
+        );
 
         return [blockInfo, txs];
       } catch (err) {
-        if (axios.isAxiosError(err) && err.response.status === 400) {
+        if (axios.isAxiosError(err) && err.response && err.response.status === 400) {
           // likely the block doesn't exist so we skip writing this as an error
           await sleep(1000);
           continue;

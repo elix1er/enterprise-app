@@ -1,50 +1,36 @@
-import { Container, useScrollableContext } from '@terra-money/apps/components';
-import classNames from 'classnames';
 import { Path } from 'navigation';
-import { NavLink } from 'react-router-dom';
-import styles from './DesktopNavigation.module.sass';
+import { HStack } from 'lib/ui/Stack';
+import { InternalLink } from 'components/link';
+import { Button } from 'lib/ui/buttons/Button';
+import { ExternalLink } from 'lib/navigation/Link/ExternalLink';
 
-interface DesktopNavigationProps {
-  className: string;
-}
-
-export const DesktopNavigation = (props: DesktopNavigationProps) => {
-  const { className } = props;
-
-  const scrollable = useScrollableContext();
-
+export const DesktopNavigation = () => {
   return (
-    <Container className={classNames(className, styles.root)}>
-      <span
-        className={styles.link}
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
+    <HStack gap={16} alignItems="center">
+      <Button
+        onClick={() => {
+          const element = document.querySelector('#featuresExplorer');
 
-          if (scrollable) {
-            const element = document.querySelector('#featuresExplorer');
-
-            const STICKY_HEADER_HEIGHT = 112;
-            const PADDING_TOP = 40;
-
-            const { y } = element?.getBoundingClientRect() ?? { y: 0 };
-
-            scrollable.scrollTo({
-              top: y - STICKY_HEADER_HEIGHT - PADDING_TOP,
-              left: 0,
-              behavior: 'smooth',
-            });
-          }
+          element?.scrollIntoView({
+            behavior: 'smooth',
+          });
         }}
+        kind="ghost"
       >
-        <span>Features</span>
-      </span>
-      <a className={styles.link} href="https://docs.enterprise.money">
-        <span>Docs</span>
-      </a>
-      <NavLink className={styles.link} to={Path.Dashboard}>
-        <span>App</span>
-      </NavLink>
-    </Container>
+        Features
+      </Button>
+
+      <ExternalLink to="https://docs.enterprise.money">
+        <Button as="div" kind="ghost">
+          Docs
+        </Button>
+      </ExternalLink>
+
+      <InternalLink to={Path.Dashboard}>
+        <Button as="div" kind="ghost">
+          App
+        </Button>
+      </InternalLink>
+    </HStack>
   );
 };

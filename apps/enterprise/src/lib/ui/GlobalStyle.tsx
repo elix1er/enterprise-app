@@ -1,4 +1,5 @@
 import { createGlobalStyle } from 'styled-components';
+import { themedScrollbarCSS } from './utils/themedScrollbarCSS';
 
 export const GlobalStyle = createGlobalStyle`
   /*
@@ -32,7 +33,7 @@ export const GlobalStyle = createGlobalStyle`
   /*
     6. Improve media defaults
   */
-  img, picture, video, canvas, svg {
+  img, picture, video, canvas {
     display: block;
     max-width: 100%;
   }
@@ -71,4 +72,6 @@ export const GlobalStyle = createGlobalStyle`
   input[type=number] {
     -moz-appearance: textfield;
   }
+
+  ${themedScrollbarCSS}
 `;

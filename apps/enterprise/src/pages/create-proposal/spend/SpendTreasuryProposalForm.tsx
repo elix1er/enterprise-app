@@ -2,7 +2,6 @@ import { ProposalForm } from '../shared/ProposalForm';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Controller, useForm } from 'react-hook-form';
-import { assertDefined, terraAddressRegex } from '@terra-money/apps/utils';
 import { toSpendTreasuryMsg } from './helpers/toSpendTreasuryMsg';
 import { TextInput } from 'lib/ui/inputs/TextInput';
 import { useState } from 'react';
@@ -10,25 +9,28 @@ import { VStack } from 'lib/ui/Stack';
 import { useCurrentDaoTreasuryTokens } from './CurrentDAOTreasuryTokentsProvider';
 import { Text } from 'lib/ui/Text';
 import { TreasuryTokenInput } from './TreasuryTokenInput';
-import { TreasuryToken } from 'queries';
-import { demicrofy } from '@terra-money/apps/libs/formatting/demicrofy';
 import { AmountTextInput } from 'lib/ui/inputs/AmountTextInput';
+import { AssetInfoWithPrice } from 'chain/Asset';
+import { fromChainAmount } from 'chain/utils/fromChainAmount';
+import { AmountSuggestion } from 'lib/ui/inputs/AmountSuggestion';
+import { terraAddressRegex } from 'chain/utils/validators';
+import { assertDefined } from 'lib/shared/utils/assertDefined';
 
 interface SpendTreasuryProposalFormSchema {
   destinationAddress: string;
-  amount: number;
+  amount: number | undefined;
 }
 
 export const SpendTreasuryProposalForm = () => {
-  const [token, setToken] = useState<TreasuryToken | null>(null);
+  const [token, setToken] = useState<AssetInfoWithPrice | null>(null);
 
   const formSchema: z.ZodType<SpendTreasuryProposalFormSchema> = z.lazy(() => {
     let amount = z.number().positive().gt(0);
     if (token) {
-      amount = amount.lte(demicrofy(token.amount, token.decimals).toNumber());
+      amount = amount.lte(fromChainAmount(token.balance, token.decimals));
     }
     return z.object({
-      destinationAddress: z.string().regex(terraAddressRegex, { message: 'Invalid Terra address' }),
+      destinationAddress: z.string().regex(terraAddressRegex, { message: 'Enter a valid Terra address' }),
       amount,
     });
   });
@@ -45,16 +47,16 @@ export const SpendTreasuryProposalForm = () => {
       disabled={!formState.isValid || !token}
       getProposalActions={() => {
         const { amount, destinationAddress } = getValues();
-        const { decimals, key, type } = assertDefined(token);
+        const { decimals, id, type } = assertDefined(token);
         return [
           {
             execute_msgs: {
               action_type: 'spend',
               msgs: [
                 toSpendTreasuryMsg({
-                  amount,
+                  amount: assertDefined(amount),
                   destinationAddress,
-                  assetId: key,
+                  assetId: id,
                   assetDecimals: decimals,
                   assetType: type === 'cw20' ? 'cw20' : 'native',
                 }),
@@ -69,7 +71,7 @@ export const SpendTreasuryProposalForm = () => {
           <TextInput
             {...register('destinationAddress')}
             label="Destination address"
-            placeholder="Enter recepient address"
+            placeholder="Enter a recepient address"
           />
           <TreasuryTokenInput value={token} onChange={setToken} />
           {token && (
@@ -81,19 +83,25 @@ export const SpendTreasuryProposalForm = () => {
                   type="number"
                   error={formState.errors.amount?.message}
                   label="Amount"
-                  placeholder="Enter amount"
+                  placeholder="Enter an amount"
                   onValueChange={onChange}
                   value={value}
                   onBlur={onBlur}
                   ref={ref}
-                  max={demicrofy(token.amount, token.decimals).toNumber()}
+                  suggestion={
+                    <AmountSuggestion
+                      name="Max"
+                      value={fromChainAmount(token.balance, token.decimals)}
+                      onSelect={onChange}
+                    />
+                  }
                 />
               )}
             />
           )}
         </VStack>
       ) : (
-        <Text color="alert">There are no tokens in the treasury</Text>
+        <Text color="alert">There are no tokens in the treasury.</Text>
       )}
     </ProposalForm>
   );

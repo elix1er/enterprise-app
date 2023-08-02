@@ -1,5 +1,5 @@
-import { FormControl } from 'components/form-control';
-import { FormTextInput } from 'components/form-text-input';
+import { WithHint } from 'lib/ui/WithHint';
+import { AmountTextInput } from 'lib/ui/inputs/AmountTextInput';
 
 export interface MinimumWeightForRewardsInputProps {
   value: number | undefined;
@@ -9,29 +9,16 @@ export interface MinimumWeightForRewardsInputProps {
 
 export const MinimumWeightForRewardsInput = ({ value, onChange, error }: MinimumWeightForRewardsInputProps) => {
   return (
-    <FormControl
-      label="Minimum weight for rewards"
-      helpText="Minimum weight that a DAO member should have in order to qualify for rewards. E.g. a value of 3 here means that a user in token or NFT DAO needs at least 3 staked DAO assets, or a weight of 3 in multisig DAO, to be eligible for rewards."
-    >
-      <FormTextInput
-        value={value === undefined ? '' : value}
-        type="number"
-        placeholder="Enter minimum weight"
-        error={error}
-        onChange={({ currentTarget }) => {
-          if (currentTarget.value === '') {
-            onChange(undefined);
-            return;
-          }
-
-          const newValue = Number(currentTarget.value);
-          if (isNaN(newValue) || newValue < 0) {
-            return;
-          }
-
-          onChange(newValue);
-        }}
-      />
-    </FormControl>
+    <AmountTextInput
+      label={
+        <WithHint hint="The minimum weight a DAO member needs in order to qualify for rewards. For example, in a token or NFT DAO, a value of 3 means that a user needs at least 3 staked assets to receive rewards. For multisigs, it is a minimum vote weight.">
+          Minimum weight for rewards
+        </WithHint>
+      }
+      value={value}
+      placeholder="Enter minimum weight"
+      error={error}
+      onValueChange={onChange}
+    />
   );
 };

@@ -1,4 +1,3 @@
-import { AnimatedPage } from '@terra-money/apps/components';
 import { HStack, VStack } from 'lib/ui/Stack';
 import { ReactNode } from 'react';
 import styled from 'styled-components';
@@ -11,8 +10,8 @@ export interface WizardLayoutProps {
 }
 
 const Container = styled(VStack)`
+  width: 100%;
   height: 100%;
-  background-image: linear-gradient(180deg, #151718 20%, #101213 100%);
   background-position: 100% 0%;
   background-size: 50% 100%;
   background-repeat: no-repeat;
@@ -40,12 +39,10 @@ export const WizardLayout = (props: WizardLayoutProps) => {
   const { children, footer, percentageComplete } = props;
 
   return (
-    <AnimatedPage>
-      <Container>
-        <StepProgress percentageComplete={percentageComplete} />
-        <Content>{children}</Content>
-        <Footer>{footer}</Footer>
-      </Container>
-    </AnimatedPage>
+    <Container>
+      <StepProgress percentageComplete={percentageComplete} />
+      <Content>{children}</Content>
+      <Footer>{footer}</Footer>
+    </Container>
   );
 };

@@ -2,17 +2,20 @@ import { useLCDClient } from '@terra-money/wallet-provider';
 import { QUERY_KEY } from 'queries';
 import { useQuery } from 'react-query';
 import { useAssertMyAddress } from './useAssertMyAddress';
-import { Msg } from '@terra-money/terra.js';
-import { demicrofy } from '@terra-money/apps/libs/formatting';
+import { Msg } from '@terra-money/feather.js';
 import { lunaDecimals } from 'chain/constants';
+import { useChainID } from 'chain/hooks/useChainID';
+import { fromChainAmount } from 'chain/utils/fromChainAmount';
 
 export const useEstimatedFeeQuery = (msgs: Msg[]) => {
   const address = useAssertMyAddress();
+  const chainID = useChainID();
 
   const client = useLCDClient();
 
   return useQuery([QUERY_KEY.ESTIMATED_FEE, msgs], async () => {
     const { auth_info } = await client.tx.create([{ address }], {
+      chainID,
       msgs,
     });
 
@@ -20,6 +23,6 @@ export const useEstimatedFeeQuery = (msgs: Msg[]) => {
     if (!ulunaAmount) {
       throw new Error('Failed to get fee amount');
     }
-    return demicrofy(ulunaAmount.toNumber(), lunaDecimals);
+    return fromChainAmount(ulunaAmount.toNumber(), lunaDecimals);
   });
 };

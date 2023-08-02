@@ -1,8 +1,8 @@
-import { useRefCallback } from '@terra-money/apps/hooks';
-import { sleep } from '@terra-money/apps/utils';
 import { useQueryClient } from 'react-query';
 import { TX_KEY } from 'tx';
 import { QUERY_KEY } from './queryKey';
+import { sleep } from 'chain/transactions/utils/sleep';
+import { useRefCallback } from 'chain/transactions/utils/useRefCallback';
 
 interface QueryRefetch {
   queryKey: QUERY_KEY;
@@ -14,7 +14,7 @@ type QueryRefetchMap = Record<TX_KEY, (QUERY_KEY | QueryRefetch)[]>;
 // TODO: check refetch for create and cancel (probably off)
 const QUERY_REFETCH_MAP: QueryRefetchMap = {
   [TX_KEY.CREATE_DAO]: [QUERY_KEY.DAOS, QUERY_KEY.RECENT_DAOS],
-  [TX_KEY.DEPOSIT]: [QUERY_KEY.TREASURY_TOKENS],
+  [TX_KEY.DEPOSIT]: [QUERY_KEY.DAO_ASSETS],
   [TX_KEY.DEPOSIT_INTO_FUNDS_DISTRIBUTOR]: [QUERY_KEY.MY_DAO_REWARDS],
   [TX_KEY.STAKE_TOKEN]: [
     QUERY_KEY.CW20_TOKEN_BALANCE,
@@ -61,11 +61,7 @@ const QUERY_REFETCH_MAP: QueryRefetchMap = {
   [TX_KEY.CREATE_PROPOSAL]: [QUERY_KEY.PROPOSALS, QUERY_KEY.RECENT_PROPOSALS, QUERY_KEY.NATIVE_BALANCE],
   [TX_KEY.EXECUTE_PROPOSAL]: [QUERY_KEY.PROPOSALS, QUERY_KEY.PROPOSAL, QUERY_KEY.NATIVE_BALANCE],
   [TX_KEY.CAST_VOTE]: [QUERY_KEY.PROPOSALS, QUERY_KEY.PROPOSAL, QUERY_KEY.PROPOSAL_VOTES, QUERY_KEY.NATIVE_BALANCE],
-  [TX_KEY.CLAIM_REWARDS]: [
-    QUERY_KEY.CW20_TOKEN_BALANCE,
-    QUERY_KEY.NATIVE_BALANCE,
-    QUERY_KEY.MY_DAO_REWARDS
-  ],
+  [TX_KEY.CLAIM_REWARDS]: [QUERY_KEY.CW20_TOKEN_BALANCE, QUERY_KEY.NATIVE_BALANCE, QUERY_KEY.MY_DAO_REWARDS],
 };
 
 const runRefetch = (queryRefetch: string | QueryRefetch): Promise<string> => {

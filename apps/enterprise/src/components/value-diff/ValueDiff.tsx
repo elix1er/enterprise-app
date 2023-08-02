@@ -10,9 +10,9 @@ interface ValueDiffProps {
 }
 
 const OldValue = styled(Text)`
-  color: ${({ theme }) => theme.colors.textSupporting3.toCssValue()};
+  color: ${({ theme }) => theme.colors.textShy.toCssValue()};
   text-decoration-line: line-through;
-`
+`;
 
 export const ValueDiff = ({ oldValue, newValue }: ValueDiffProps) => (
   <HStack alignItems="center" gap={12}>

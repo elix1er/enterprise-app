@@ -1,38 +1,41 @@
 import { DefaultTheme } from 'styled-components';
 import { HSLA } from 'lib/ui/colors/HSLA';
 import { sharedColors } from './shared';
+import { generateLabelColorGetter } from '../colors/generateLabelColorGetter';
 
 const backgroundHue = 0;
 const backgroundSaturation = 0;
-
-export const regularTextAlpha = 0.9;
+const backgroundLightness = 10;
 
 export const darkTheme: DefaultTheme = {
   name: 'dark',
   colors: {
     ...sharedColors,
-    foreground: new HSLA(200, 5, 12),
 
-    foregroundAlt: new HSLA(200, 4, 15),
-    foregroundAltHover: new HSLA(200, 3, 18),
+    success: new HSLA(130, 56, 52),
+    alert: new HSLA(0, 79, 63),
+    idle: new HSLA(32, 79, 48),
 
-    background: new HSLA(200, 9, 7),
+    foreground: new HSLA(backgroundHue, backgroundSaturation, backgroundLightness + 3),
+    background: new HSLA(backgroundHue, backgroundSaturation, backgroundLightness),
     text: new HSLA(0, 0, 100, 0.81),
-    textSupporting: new HSLA(0, 0, 100, 0.6),
-    textSupporting2: new HSLA(0, 0, 100, 0.44),
-    textSupporting3: new HSLA(0, 0, 100, 0.28),
+    textSupporting: new HSLA(0, 0, 61),
+    textShy: new HSLA(0, 0, 100, 0.28),
 
-    backgroundGlass: new HSLA(0, 0, 100, 0.06),
-    backgroundGlass2: new HSLA(0, 0, 100, 0.13),
-
-    gradient: [new HSLA(318, 32, 72), new HSLA(220, 53, 83), new HSLA(347, 19, 81)],
+    mist: new HSLA(0, 0, 100, 0.06),
+    mistExtra: new HSLA(0, 0, 100, 0.13),
 
     overlay: new HSLA(backgroundHue, backgroundSaturation, 1, 0.8),
 
-    outlinedHover: new HSLA(0, 0, 16),
+    getLabelColor: generateLabelColorGetter({
+      saturation: 56,
+      lightness: 52,
+    }),
+
+    contrast: new HSLA(0, 0, 100),
   },
   shadows: {
     small: 'rgb(15 15 15 / 20%) 0px 0px 0px 1px, rgb(15 15 15 / 20%) 0px 2px 4px',
-    mediud: 'rgb(15 15 15 / 10%) 0px 0px 0px 1px, rgb(15 15 15 / 20%) 0px 3px 6px, rgb(15 15 15 / 40%) 0px 9px 24px;',
+    medium: 'rgb(15 15 15 / 10%) 0px 0px 0px 1px, rgb(15 15 15 / 20%) 0px 3px 6px, rgb(15 15 15 / 40%) 0px 9px 24px;',
   },
 };

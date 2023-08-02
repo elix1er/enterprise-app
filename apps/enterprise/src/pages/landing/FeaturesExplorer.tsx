@@ -1,5 +1,5 @@
 import classNames from 'classnames';
-import { Text } from 'components/primitives';
+import { Text } from 'lib/ui/Text';
 import { useDisplay } from 'hooks';
 import { useState } from 'react';
 import styles from './FeaturesExplorer.module.sass';
@@ -18,17 +18,17 @@ const features: Feature[] = [
   },
   {
     title: 'Add DAOs to your watchlist',
-    description: 'Follow your favorite DAOs and see what they are up to.',
+    description: 'Follow your favourite DAOs and see what they are up to.',
     imageUrl: 'images/landing-dashboard.png',
   },
   {
     title: 'Monitor DAO treasuries',
-    description: 'Keep an eye on a DAOs assets and propose how they should be spent.',
+    description: "Keep an eye on a DAO's assets and propose how they should be spent.",
     imageUrl: 'images/landing-dashboard.png',
   },
   {
-    title: 'Trade DAO tokens (coming soon!)',
-    description: 'Become a member of different DAOs by trading DAO tokens.',
+    title: 'Cross-chain functionality (coming soon!)',
+    description: 'Create Enterprise DAOs on your favorite chains.',
     imageUrl: 'images/landing-dashboard.png',
   },
 ];
@@ -45,8 +45,10 @@ export const FeaturesExplorer = () => {
           if (isMobile) {
             return (
               <div key={index} className={styles.item}>
-                <Text variant="heading4">{title}</Text>
-                <Text variant="text">{description}</Text>
+                <Text weight="semibold">{title}</Text>
+                <Text size={14} color="supporting">
+                  {description}
+                </Text>
               </div>
             );
           }
@@ -58,8 +60,10 @@ export const FeaturesExplorer = () => {
               onMouseEnter={() => setActiveFeature(index)}
               className={classNames(styles.item, { [styles.active]: isActive })}
             >
-              <Text variant="heading4">{title}</Text>
-              <Text variant="text">{description}</Text>
+              <Text weight="semibold">{title}</Text>
+              <Text size={14} color="supporting">
+                {description}
+              </Text>
             </div>
           );
         })}

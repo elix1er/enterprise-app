@@ -1,7 +1,8 @@
-import { useAssertConnectedWallet } from './useAssertConnectedWallet';
+import { assertDefined } from 'lib/shared/utils/assertDefined';
+import { useMyAddress } from './useMyAddress';
 
 export const useAssertMyAddress = () => {
-  const { terraAddress } = useAssertConnectedWallet();
+  const myAddress = useMyAddress();
 
-  return terraAddress;
+  return assertDefined(myAddress, 'myAddress');
 };

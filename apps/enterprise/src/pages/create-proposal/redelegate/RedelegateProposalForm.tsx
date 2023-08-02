@@ -6,8 +6,8 @@ import { useDelegationsQuery } from 'chain/queries/useDelegationsQuery';
 import { useMemo, useState } from 'react';
 import { FixedOptionsInput } from 'lib/ui/inputs/Combobox/FixedOptionsInput';
 import * as z from 'zod';
-import { demicrofy } from '@terra-money/apps/libs/formatting';
-import { assertDefined } from '@terra-money/apps/utils';
+import { fromChainAmount } from 'chain/utils/fromChainAmount';
+import { assertDefined } from 'lib/shared/utils/assertDefined';
 import { lunaDecimals } from 'chain/constants';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,9 +15,10 @@ import { AmountTextInput } from 'lib/ui/inputs/AmountTextInput';
 import { toRedelegateMsg } from './toRedelegateMsg';
 import { zodAddressValidator } from 'chain/utils/validators';
 import { TextInput } from 'lib/ui/inputs/TextInput';
+import { AmountSuggestion } from 'lib/ui/inputs/AmountSuggestion';
 
 interface RedelegateProposalFormSchema {
-  amount: number;
+  amount: number | undefined;
   newAddress: string;
 }
 
@@ -31,7 +32,7 @@ export const RedelegateProposalForm = () => {
     if (!validator) return undefined;
 
     const delegation = assertDefined(delegations.find((d) => d.validator_address === validator));
-    return demicrofy(delegation.balance.amount.toNumber(), lunaDecimals).toNumber();
+    return fromChainAmount(delegation.balance.amount.toNumber(), lunaDecimals);
   }, [delegations, validator]);
 
   const formSchema: z.ZodType<RedelegateProposalFormSchema> = z.object({
@@ -64,7 +65,7 @@ export const RedelegateProposalForm = () => {
               action_type: 'redelegate',
               msgs: [
                 toRedelegateMsg({
-                  amount,
+                  amount: assertDefined(amount),
                   oldAddress: assertDefined(validator),
                   newAddress,
                 }),
@@ -78,7 +79,7 @@ export const RedelegateProposalForm = () => {
         isLoading={areDelegationsLoading}
         label="Validator"
         value={validator}
-        placeholder="Select validator"
+        placeholder="Select a validator"
         onChange={setValidator}
         optionToString={(validatorAddress) => validatorAddress}
         options={delegations.map((delegation) => delegation.validator_address)}
@@ -94,17 +95,20 @@ export const RedelegateProposalForm = () => {
               <AmountTextInput
                 type="number"
                 error={errors.amount?.message}
-                label="LUNA amount"
-                placeholder="Enter amount"
+                label="Amount"
+                placeholder="Enter an amount"
                 onValueChange={onChange}
                 value={value}
                 onBlur={onBlur}
                 ref={ref}
-                max={maxAmount}
+                unit="LUNA"
+                suggestion={
+                  maxAmount ? <AmountSuggestion name="Max" value={maxAmount} onSelect={onChange} /> : undefined
+                }
               />
             )}
           />
-          <TextInput {...register('newAddress')} label="New validator" placeholder="Enter address" />
+          <TextInput {...register('newAddress')} label="New validator" placeholder="Enter an address" />
         </>
       )}
     </ProposalForm>

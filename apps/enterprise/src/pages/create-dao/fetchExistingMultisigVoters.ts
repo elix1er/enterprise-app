@@ -1,12 +1,12 @@
-import { FormModifier } from '@terra-money/apps/hooks';
-import { validateAddress } from '@terra-money/apps/utils';
-import { NetworkInfo } from '@terra-money/wallet-provider';
 import { fetchCW3ListVoters } from 'queries';
 import { DaoWizardState } from './DaoWizardFormProvider';
+import { LCDClient } from '@terra-money/feather.js';
+import { validateAddress } from 'chain/utils/validators';
+import { FormModifier } from 'lib/shared/hooks/useForm';
 
 export const fetchExistingMultisigVoters = async (
   dispatch: FormModifier<DaoWizardState>,
-  network: NetworkInfo,
+  lcd: LCDClient,
   multisigAddr: string
 ) => {
   const existingMultisigVotersError = validateAddress(multisigAddr);
@@ -20,7 +20,7 @@ export const fetchExistingMultisigVoters = async (
   if (existingMultisigVotersError === undefined) {
     try {
       dispatch({
-        existingMultisigVoters: await fetchCW3ListVoters(network, multisigAddr),
+        existingMultisigVoters: await fetchCW3ListVoters(lcd, multisigAddr),
         existingMultisigVotersLoading: false,
         existingMultisigVotersError: undefined,
       });
@@ -28,7 +28,7 @@ export const fetchExistingMultisigVoters = async (
       dispatch({
         existingMultisigVoters: undefined,
         existingMultisigVotersLoading: false,
-        existingMultisigVotersError: 'Could not find the existing multisig voters list.',
+        existingMultisigVotersError: 'The existing multisig could not be found.',
       });
     }
   }
